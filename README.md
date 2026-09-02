@@ -11,14 +11,15 @@
 
 ### ⚡ Sovereign Markor-style Markdown Notebook, QuickNotes & Todo TUI for Terminal Power Users
 
+[![PyPI Version](https://img.shields.io/pypi/v/markora.svg)](https://pypi.org/project/markora/)
+[![PyPI Downloads](https://img.shields.io/pypi/dm/markora.svg)](https://pypi.org/project/markora/)
 [![CI](https://github.com/zyekhabdul/markora/actions/workflows/ci.yml/badge.svg)](https://github.com/zyekhabdul/markora/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Python: 3.8+](https://img.shields.io/badge/python-3.8+-green.svg)](https://www.python.org/downloads/)
-[![Code Style: Clean](https://img.shields.io/badge/code%20style-clean-brightgreen.svg)](https://github.com/zyekhabdul/markora)
 
 **[Features](#-key-features)** •
 **[Interactive TUI](#️-interactive-curses-tui)** •
-**[1-Line Install](#-installation)** •
+**[Installation](#-installation)** •
 **[CLI Reference](#-cli-command-reference)** •
 **[TUI Shortcuts](#️-tui-keyboard-shortcuts)** •
 **[Google Keep Sync](#-google-keep-bidirectional-sync)** •
@@ -34,7 +35,7 @@ If you love the simplicity, offline-first philosophy, and markdown-native archit
 
 - **Zero Cloud Lock-in**: Your data is 100% plain Markdown files in `~/Documents` (or your custom directory). You own your notes forever.
 - **Zero Heavy Dependencies**: Core CLI and interactive TUI run entirely on the Python 3 standard library. No Electron bloat, no node_modules, no heavy frameworks.
-- **Dual Personality**: Use lightning-fast one-liner CLI commands (`markora add`, `markora qn`) for scriptability, or fire up the rich interactive 4-tab Curses TUI (`markora ui`) for browsing, editing, and task triage.
+- **Dual Personality**: Use lightning-fast one-liner CLI commands (`markora add`, `markora qn`, or short aliases `td`, `mo`) for scriptability, or fire up the rich interactive 4-tab Curses TUI (`markora ui`) for browsing, editing, and task triage.
 - **Seamless Portability**: Sync your folder with Syncthing, Nextcloud, Git, or Android Markor without converting formats.
 
 ---
@@ -78,22 +79,20 @@ Launch with `markora ui` (or alias `td ui`):
 
 ## 📦 Installation
 
-### Option 1: 1-Line Standalone Installer (Recommended)
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/zyekhabdul/markora/main/install.sh | bash
-```
-
-This installs `markora` (and aliases `td`, `todo`, `mo`) into `~/.local/bin/`.
-
-### Option 2: Pip / Pipx Installation
+### Option 1: Official PyPI (Recommended)
 
 ```bash
 # Standard install (Zero external dependencies)
-pip install git+https://github.com/zyekhabdul/markora.git
+pip install markora
 
 # With optional Google Keep synchronization
-pip install "markora[keep] @ git+https://github.com/zyekhabdul/markora.git"
+pip install "markora[keep]"
+```
+
+### Option 2: 1-Line Standalone Installer
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/zyekhabdul/markora/main/install.sh | bash
 ```
 
 ### Option 3: Manual Clone & Symlink

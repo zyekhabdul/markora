@@ -1,5 +1,5 @@
 import os
-from td.quicknote import load_quicknote, append_quicknote
+from markora.quicknote import load_quicknote, append_quicknote
 
 
 def test_quicknote_flow(temp_workspace):

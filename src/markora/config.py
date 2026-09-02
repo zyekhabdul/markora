@@ -1,19 +1,28 @@
 """
-Configuration and Environment Settings for td
+Configuration and Environment Settings for Markora
 """
 
 import os
 import shutil
 
 # --- CONFIGURATION & PATH RESOLUTION ---
-DOCS_DIR = os.environ.get("NOTES_DIR", os.path.expanduser("~/Documents"))
-QUICKNOTE_FILE = os.path.join(DOCS_DIR, "quicknote.md")
-TODO_FILE = os.environ.get("TODO_FILE", os.path.join(DOCS_DIR, "TODOLIST.md"))
+DOCS_DIR = os.environ.get("MARKORA_NOTES_DIR") or os.environ.get("NOTES_DIR", os.path.expanduser("~/Documents"))
+QUICKNOTE_FILE = os.environ.get("MARKORA_QUICKNOTE_FILE") or os.path.join(DOCS_DIR, "quicknote.md")
+TODO_FILE = os.environ.get("MARKORA_TODO_FILE") or os.environ.get("TODO_FILE", os.path.join(DOCS_DIR, "TODOLIST.md"))
 NOTES_DIR = os.path.join(DOCS_DIR, "notes")
 DAILY_DIR = os.path.join(DOCS_DIR, "daily-notes")
 
-# Keep & Config paths
-CONFIG_DIR = os.path.expanduser("~/.config/td")
+# Config directory (~/.config/markora with legacy fallback to ~/.config/td)
+LEGACY_CONFIG_DIR = os.path.expanduser("~/.config/td")
+PRIMARY_CONFIG_DIR = os.path.expanduser("~/.config/markora")
+
+if os.path.exists(PRIMARY_CONFIG_DIR):
+    CONFIG_DIR = PRIMARY_CONFIG_DIR
+elif os.path.exists(LEGACY_CONFIG_DIR):
+    CONFIG_DIR = LEGACY_CONFIG_DIR
+else:
+    CONFIG_DIR = PRIMARY_CONFIG_DIR
+
 KEEP_CONFIG_DIR = CONFIG_DIR
 KEEP_CONFIG_FILE = os.path.join(CONFIG_DIR, "keep_config.json")
 KEEP_STATE_FILE = os.path.join(CONFIG_DIR, "keep_state.json")
@@ -33,6 +42,8 @@ class Colors:
     RESET = "\033[0m"
     BOLD = "\033[1m"
     DIM = "\033[2m"
+    ITALIC = "\033[3m"
+    UNDERLINE = "\033[4m"
     RED = "\033[31m"
     GREEN = "\033[32m"
     YELLOW = "\033[33m"
@@ -40,7 +51,12 @@ class Colors:
     MAGENTA = "\033[35m"
     CYAN = "\033[36m"
     WHITE = "\033[37m"
+    BRIGHT_BLACK = "\033[90m"
+    BRIGHT_CYAN = "\033[96m"
+    BRIGHT_GREEN = "\033[92m"
+    BRIGHT_YELLOW = "\033[93m"
     BG_BLUE = "\033[44m"
+    BG_CYAN = "\033[46m"
     BG_GRAY = "\033[100m"
 
 

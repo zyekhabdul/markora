@@ -3,9 +3,9 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "td-notes"
+name = "markora"
 version = "1.0.0"
-description = "Fast, sovereign Markor-style Todo, QuickNotes & Markdown Notebook Manager (CLI + TUI)"
+description = "⚡ Sovereign Markor-style Markdown Notebook, QuickNotes & Todo TUI for Terminal Power Users"
 readme = "README.md"
 requires-python = ">=3.8"
 license = { text = "MIT" }
@@ -13,15 +13,18 @@ authors = [
     { name = "zyekhabdul", email = "zyekhabdulqadirjailani@gmail.com" }
 ]
 keywords = [
-    "todo",
-    "notes",
+    "markora",
+    "markor",
     "markdown",
+    "notes",
+    "notebook",
+    "todo",
     "tui",
     "curses",
-    "markor",
     "google-keep",
     "productivity",
-    "cli"
+    "cli",
+    "terminal"
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -65,13 +68,16 @@ dev = [
 ]
 
 [project.scripts]
-td = "td.cli:main"
-todo = "td.cli:main"
+markora = "markora.cli:main"
+td = "markora.cli:main"
+todo = "markora.cli:main"
+mo = "markora.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/zyekhabdul/td"
-Repository = "https://github.com/zyekhabdul/td.git"
-Issues = "https://github.com/zyekhabdul/td/issues"
+Homepage = "https://github.com/zyekhabdul/markora"
+Repository = "https://github.com/zyekhabdul/markora.git"
+Issues = "https://github.com/zyekhabdul/markora/issues"
+Changelog = "https://github.com/zyekhabdul/markora/blob/main/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
 where = ["src"]

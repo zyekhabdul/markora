@@ -1,5 +1,5 @@
 import os
-from td.document import TodoDocument, Task
+from markora.document import TodoDocument, Task
 
 
 def test_init_creates_scaffold(temp_workspace):

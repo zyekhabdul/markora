@@ -1,5 +1,5 @@
 import os
-from td.favorites import FavoritesManager
+from markora.favorites import FavoritesManager
 
 
 def test_favorites_manager(temp_workspace):

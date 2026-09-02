@@ -1,12 +1,12 @@
 .PHONY: help install dev test lint clean symlink
 
 help:
-	@echo "td - Markdown Todo & Notebook Manager"
+	@echo "Markora - Sovereign Markdown Notebook & Todo TUI"
 	@echo ""
 	@echo "Usage:"
 	@echo "  make install    - Install package locally (pip install .)"
 	@echo "  make dev        - Install in editable mode with dev dependencies"
-	@echo "  make symlink    - Symlink bin/td to ~/.local/bin/td"
+	@echo "  make symlink    - Symlink bin/markora to ~/.local/bin/markora, td, todo, mo"
 	@echo "  make test       - Run test suite with pytest"
 	@echo "  make lint       - Run syntax and type checks"
 	@echo "  make clean      - Clean build and cache artifacts"
@@ -19,15 +19,17 @@ dev:
 
 symlink:
 	mkdir -p ~/.local/bin
-	ln -sf $(PWD)/bin/td ~/.local/bin/td
-	ln -sf $(PWD)/bin/td ~/.local/bin/todo
-	@echo "Symlinked to ~/.local/bin/td and ~/.local/bin/todo"
+	ln -sf $(PWD)/bin/markora ~/.local/bin/markora
+	ln -sf $(PWD)/bin/markora ~/.local/bin/td
+	ln -sf $(PWD)/bin/markora ~/.local/bin/todo
+	ln -sf $(PWD)/bin/markora ~/.local/bin/mo
+	@echo "Symlinked to ~/.local/bin/markora, ~/.local/bin/td, ~/.local/bin/todo, ~/.local/bin/mo"
 
 test:
 	pytest tests/
 
 lint:
-	python3 -m py_compile src/td/*.py
+	python3 -m py_compile src/markora/*.py
 
 clean:
 	rm -rf build/ dist/ *.egg-info .pytest_cache/ .coverage htmlcov/

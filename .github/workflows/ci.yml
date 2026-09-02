@@ -29,4 +29,4 @@ jobs:
 
       - name: Test with pytest
         run: |
-          pytest --cov=src/td tests/
+          pytest --cov=src/markora tests/

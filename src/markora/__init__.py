@@ -1,8 +1,9 @@
 """
-td: Sovereign Markor-style Todo, QuickNotes & Markdown Notebook Manager
+Markora: Sovereign Markor-style Markdown Notebook, QuickNotes & Todo TUI
 """
 
 __version__ = "1.0.0"
+__app_name__ = "markora"
 __author__ = "zyekhabdul"
 
 from .document import Task, TodoDocument
@@ -22,4 +23,6 @@ __all__ = [
     "TodoTUI",
     "start_tui",
     "main",
+    "__version__",
+    "__app_name__",
 ]

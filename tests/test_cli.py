@@ -1,4 +1,4 @@
-from td.cli import main, build_parser
+from markora.cli import main, build_parser
 
 
 def test_build_parser():

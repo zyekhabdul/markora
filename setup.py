@@ -2,14 +2,16 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="td-notes",
+    name="markora",
     version="1.0.0",
     package_dir={"": "src"},
     packages=find_packages(where="src"),
     entry_points={
         "console_scripts": [
-            "td = td.cli:main",
-            "todo = td.cli:main",
+            "markora = markora.cli:main",
+            "td = markora.cli:main",
+            "todo = markora.cli:main",
+            "mo = markora.cli:main",
         ],
     },
 )

@@ -1,5 +1,5 @@
 """
-Markor 4-Tab Interactive Curses TUI
+Markora 4-Tab Interactive Curses TUI
 """
 
 import os
@@ -31,7 +31,7 @@ class TodoTUI:
         self.cursor_idx = 0
         self.scroll_offset = 0
         self.filter_text = ""
-        self.status_msg = "Markor Mode Active. Press ? for help."
+        self.status_msg = "Markora Active. Press ? for help."
         self.notes_list = []
         self.quicknote_lines = []
         self.search_results = []
@@ -323,11 +323,11 @@ class TodoTUI:
             return
 
         # 1. Top Header Bar
-        header_title = " MARKOR NOTEBOOK (td) "
+        header_title = " MARKORA NOTEBOOK "
         current_ssot = f"SSOT: {os.path.basename(self.doc.filepath)}"
         self.safe_addstr(0, 0, f"{header_title} | {current_ssot}".ljust(w), self.cp(6) | curses.A_BOLD)
 
-        # 2. Markor 4-Tabs Bar
+        # 2. Markora 4-Tabs Bar
         tabs = [
             (" [1] QuickNote ", 0),
             (" [2] To-Do ", 1),
@@ -391,7 +391,6 @@ class TodoTUI:
         elif self.cursor_idx >= self.scroll_offset + max_h:
             self.scroll_offset = self.cursor_idx - max_h + 1
 
-        # Left Column: Scratchpad List
         for row in range(max_h):
             idx = self.scroll_offset + row
             if idx >= len(lines):
@@ -413,16 +412,15 @@ class TodoTUI:
         for r in range(max_h):
             self.safe_addstr(start_y + r, split_w, "│", self.cp(4))
 
-        # Right Column: QuickNote Info & Actions Panel
         right_x = split_w + 2
         right_avail = full_w - right_x - 1
-        self.safe_addstr(start_y, right_x, "Markor QuickNote Scratchpad", self.cp(4) | curses.A_BOLD)
+        self.safe_addstr(start_y, right_x, "Markora QuickNote Scratchpad", self.cp(4) | curses.A_BOLD)
         self.safe_addstr(start_y + 1, right_x, f"Path: {os.path.basename(QUICKNOTE_FILE)}", self.cp(3))
         self.safe_addstr(start_y + 2, right_x, "─" * (right_avail - 2), self.cp(4))
         self.safe_addstr(start_y + 4, right_x, "Quick Actions:", curses.A_BOLD)
         self.safe_addstr(start_y + 5, right_x, "• Press 'a' : Append new atomic memo / idea", self.cp(2))
         self.safe_addstr(start_y + 6, right_x, "• Press 't' : Insert current date & time stamp", self.cp(3))
-        self.safe_addstr(start_y + 7, right_x, "• Press 'e' : Open full file in Neovim/Zed", self.cp(4))
+        self.safe_addstr(start_y + 7, right_x, "• Press 'e' : Open full file in editor ($EDITOR)", self.cp(4))
         self.safe_addstr(start_y + 9, right_x, "Selected Line Preview:", curses.A_BOLD)
         if lines and self.cursor_idx < len(lines):
             cur_line = lines[self.cursor_idx]
@@ -1253,7 +1251,7 @@ class TodoTUI:
                 try:
                     km = KeepSyncManager()
                     if not km.is_authenticated():
-                        self.status_msg = "Keep not connected. Run 'td keep auth' in CLI."
+                        self.status_msg = "Keep not connected. Run 'markora keep auth' in CLI."
                     else:
                         h, w = self.stdscr.getmaxyx()
                         self.safe_addstr(0, 0, " [ SYNCING GOOGLE KEEP... ] ".center(w), self.cp(3) | curses.A_BOLD)
@@ -1272,7 +1270,7 @@ class TodoTUI:
     def _show_help(self):
         h, w = self.stdscr.getmaxyx()
         help_lines = [
-            "  MARKOR NOTEBOOK - KEYBOARD SHORTCUTS  ",
+            "  MARKORA NOTEBOOK - KEYBOARD SHORTCUTS  ",
             "─────────────────────────────────────────",
             "  1 / 2 / 3 / 4  : Switch QuickNote/To-Do/Notebook/Search",
             "  Tab            : Cycle through 4 tabs",
@@ -1322,8 +1320,8 @@ def launch_gui_window():
     """Launch TUI in floating terminal for Desktop App Launcher."""
     try:
         if os.environ.get("WAYLAND_DISPLAY") or os.environ.get("NIRI_SOCKET"):
-            subprocess.Popen(["alacritty", "--class", "td-notebook", "-T", "Markor Todo Notebook", "-e", "td", "ui"])
+            subprocess.Popen(["alacritty", "--class", "markora", "-T", "Markora Notebook", "-e", "markora", "ui"])
         else:
-            subprocess.Popen(["x-terminal-emulator", "-e", "td", "ui"])
+            subprocess.Popen(["x-terminal-emulator", "-e", "markora", "ui"])
     except Exception as e:
         print(f"Error launching GUI window: {e}")

@@ -1,5 +1,5 @@
 """
-CLI Command Handlers & Argparse Entry Point
+CLI Command Handlers & Argparse Entry Point for Markora
 """
 
 import sys
@@ -10,6 +10,7 @@ import argparse
 import datetime
 import subprocess
 
+from . import __version__, __app_name__
 from .config import (
     DOCS_DIR,
     NOTES_DIR,
@@ -25,6 +26,16 @@ from .quicknote import load_quicknote, append_quicknote
 from .favorites import FavoritesManager
 from .keep import KeepSyncManager
 from .tui import start_tui, launch_gui_window
+
+BANNER = rf"""{Colors.BOLD}{Colors.CYAN}
+  __  __            _                     
+ |  \/  |          | |                    
+ | \  / | __ _ _ __| | _____  _ __ __ _   
+ | |\/| |/ _` | '__| |/ / _ \| '__/ _` |  
+ | |  | | (_| | |  |   < (_) | | | (_| |  
+ |_|  |_|\__,_|_|  |_|\_\___/|_|  \__,_|  
+{Colors.RESET}{Colors.DIM} Sovereign Markor-style Markdown Notebook & Todo TUI v{__version__}{Colors.RESET}
+"""
 
 
 def cmd_quicknote(args):
@@ -45,7 +56,7 @@ def cmd_quicknote(args):
                 print(f"  {Colors.YELLOW}•{Colors.RESET} {line[2:]}")
             else:
                 print(f"  {line}")
-        print(f"\n{Colors.DIM}Hint: 'td qn <text>' to append, 'td qn -e' to edit in editor.{Colors.RESET}\n")
+        print(f"\n{Colors.DIM}Hint: 'markora qn <text>' to append, 'markora qn -e' to edit in editor.{Colors.RESET}\n")
 
 
 def cmd_list(args, doc):
@@ -398,14 +409,14 @@ def cmd_keep(args):
             print(f"  Account      : {Colors.BOLD}{email}{Colors.RESET}")
             print(f"  Last Sync    : {Colors.DIM}{last_sync}{Colors.RESET}")
             print(f"  Config File  : {Colors.DIM}{km.config_file}{Colors.RESET}")
-            print(f"\n{Colors.DIM}Commands: td keep pull | td keep push | td keep sync | td keep logout{Colors.RESET}\n")
+            print(f"\n{Colors.DIM}Commands: markora keep pull | markora keep push | markora keep sync | markora keep logout{Colors.RESET}\n")
         else:
             print(f"  Status       : {Colors.YELLOW}[ NOT AUTHENTICATED ]{Colors.RESET}")
-            print(f"\n  Run {Colors.BOLD}td keep auth{Colors.RESET} to connect your Google Keep account.\n")
+            print(f"\n  Run {Colors.BOLD}markora keep auth{Colors.RESET} to connect your Google Keep account.\n")
 
     elif action == "pull":
         if not km.is_authenticated():
-            print(f"{Colors.RED}[ ERROR ] Not authenticated. Run 'td keep auth' first.{Colors.RESET}")
+            print(f"{Colors.RED}[ ERROR ] Not authenticated. Run 'markora keep auth' first.{Colors.RESET}")
             return
         print(f"{Colors.DIM}Pulling notes from Google Keep...{Colors.RESET}")
         try:
@@ -416,7 +427,7 @@ def cmd_keep(args):
 
     elif action == "push":
         if not km.is_authenticated():
-            print(f"{Colors.RED}[ ERROR ] Not authenticated. Run 'td keep auth' first.{Colors.RESET}")
+            print(f"{Colors.RED}[ ERROR ] Not authenticated. Run 'markora keep auth' first.{Colors.RESET}")
             return
         print(f"{Colors.DIM}Pushing notes to Google Keep...{Colors.RESET}")
         try:
@@ -427,7 +438,7 @@ def cmd_keep(args):
 
     elif action == "sync":
         if not km.is_authenticated():
-            print(f"{Colors.RED}[ ERROR ] Not authenticated. Run 'td keep auth' first.{Colors.RESET}")
+            print(f"{Colors.RED}[ ERROR ] Not authenticated. Run 'markora keep auth' first.{Colors.RESET}")
             return
         print(f"{Colors.DIM}Synchronizing with Google Keep...{Colors.RESET}")
         try:
@@ -443,9 +454,17 @@ def cmd_keep(args):
 
 def build_parser():
     parser = argparse.ArgumentParser(
-        prog="td",
-        description="td: Sovereign Markor-style Todo, QuickNotes & Markdown Notebook Manager"
+        prog="markora",
+        description=f"Markora v{__version__}: Sovereign Markor-style Markdown Notebook, QuickNotes & Todo TUI",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="Examples:\n"
+               "  markora ui                    Launch interactive 4-tab Curses TUI\n"
+               "  markora add 'Finish report' -p p1\n"
+               "  markora qn 'Quick thought'\n"
+               "  markora list -p\n"
+               "  markora done 1 2\n"
     )
+    parser.add_argument("-v", "--version", action="version", version=f"%(prog)s v{__version__}")
     subparsers = parser.add_subparsers(dest="command", help="Subcommand to run")
 
     # quicknote / qn
@@ -505,7 +524,7 @@ def build_parser():
     p_rename.add_argument("new_name", help="New name for the task, note, or folder")
 
     # ui / tui / dui / app
-    subparsers.add_parser("ui", aliases=["tui", "dui", "app"], help="Launch Markor-style interactive 4-tab TUI")
+    subparsers.add_parser("ui", aliases=["tui", "dui", "app"], help="Launch Markora interactive 4-tab Curses TUI")
 
     # gui (App launcher background launch)
     subparsers.add_parser("gui", help="Launch in desktop terminal window")

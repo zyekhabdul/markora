@@ -6,8 +6,10 @@ Launcher script for Markora (Sovereign Markdown Notebook & Todo TUI)
 import sys
 import os
 
-# Allow running uninstalled from source tree
-src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src"))
+# Resolve real path in case of symlink
+real_file = os.path.realpath(__file__)
+src_path = os.path.abspath(os.path.join(os.path.dirname(real_file), "..", "src"))
+
 if os.path.isdir(src_path) and src_path not in sys.path:
     sys.path.insert(0, src_path)
 

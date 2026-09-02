@@ -1,0 +1,82 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "td-notes"
+version = "1.0.0"
+description = "Fast, sovereign Markor-style Todo, QuickNotes & Markdown Notebook Manager (CLI + TUI)"
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "MIT" }
+authors = [
+    { name = "zyekhabdul", email = "zyekhabdulqadirjailani@gmail.com" }
+]
+keywords = [
+    "todo",
+    "notes",
+    "markdown",
+    "tui",
+    "curses",
+    "markor",
+    "google-keep",
+    "productivity",
+    "cli"
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Environment :: Console :: Curses",
+    "Intended Audience :: Developers",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Text Editors",
+    "Topic :: Utilities"
+]
+dependencies = []
+
+[project.optional-dependencies]
+keep = [
+    "gkeepapi>=0.14.0",
+    "gpsoauth>=1.0.0"
+]
+browser-auth = [
+    "playwright>=1.40.0"
+]
+all = [
+    "gkeepapi>=0.14.0",
+    "gpsoauth>=1.0.0",
+    "playwright>=1.40.0"
+]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "flake8>=6.0.0"
+]
+
+[project.scripts]
+td = "td.cli:main"
+todo = "td.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/zyekhabdul/td"
+Repository = "https://github.com/zyekhabdul/td.git"
+Issues = "https://github.com/zyekhabdul/td/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-v"

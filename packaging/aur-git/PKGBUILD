@@ -1,0 +1,31 @@
+# Maintainer: zyekhabdul <zyekhabdulqadirjailani@gmail.com>
+pkgname=markora-git
+pkgver=1.0.0.r0.g$(git -C /home/fuckadmin/Projects/markora rev-parse --short HEAD 2>/dev/null || echo "latest")
+pkgrel=1
+pkgdesc="Sovereign Markor-style Markdown Notebook, QuickNotes & Todo TUI (development branch)"
+arch=('any')
+url="https://github.com/zyekhabdul/markora"
+license=('MIT')
+depends=('python')
+makedepends=('git' 'python-setuptools')
+provides=('markora')
+conflicts=('markora')
+source=("git+$url.git")
+sha256sums=('SKIP')
+
+pkgver() {
+    cd "$srcdir/markora"
+    git describe --long --tags 2>/dev/null | sed 's/^v//;s/\([^-]*-g\)/r\1/;s/-/./g' || printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
+
+build() {
+    cd "$srcdir/markora"
+    python setup.py build
+}
+
+package() {
+    cd "$srcdir/markora"
+    python setup.py install --root="$pkgdir" --optimize=1 --skip-build
+    install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+    install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
+}

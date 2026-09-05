@@ -71,3 +71,16 @@ favorites.json
 *.swo
 *~
 .DS_Store
+
+# Arch packaging build artifacts
+packaging/aur/src/
+packaging/aur/pkg/
+packaging/aur/*.tar.gz
+packaging/aur/*.pkg.tar*
+packaging/aur-git/src/
+packaging/aur-git/pkg/
+packaging/aur-git/*.tar.gz
+packaging/aur-git/*.pkg.tar*
+packaging/pacman-repo/*.pkg.tar*
+packaging/pacman-repo/*.db*
+packaging/pacman-repo/*.files*

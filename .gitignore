@@ -84,3 +84,5 @@ packaging/aur-git/*.pkg.tar*
 packaging/pacman-repo/*.pkg.tar*
 packaging/pacman-repo/*.db*
 packaging/pacman-repo/*.files*
+packaging/debian/*.deb
+packaging/debian/build_deb/

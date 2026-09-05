@@ -1,4 +1,4 @@
-.PHONY: help install dev test lint clean symlink pkg-aur pkg-repo
+.PHONY: help install dev test lint clean symlink pkg-aur pkg-repo pkg-deb pkg-pypi pkg-all
 
 help:
 	@echo "Markora - Sovereign Markdown Notebook & Todo TUI"
@@ -9,8 +9,11 @@ help:
 	@echo "  make symlink    - Symlink bin/markora to ~/.local/bin/markora, td, todo, mo"
 	@echo "  make test       - Run test suite with pytest"
 	@echo "  make lint       - Run syntax and type checks"
-	@echo "  make pkg-aur    - Build and test Arch package (makepkg)"
-	@echo "  make pkg-repo   - Build package and update local pacman repository"
+	@echo "  make pkg-aur    - Build Arch package & .SRCINFO (makepkg)"
+	@echo "  make pkg-repo   - Build Arch package & update local pacman repository"
+	@echo "  make pkg-deb    - Build Debian/Ubuntu package (dpkg-deb)"
+	@echo "  make pkg-pypi   - Build PyPI source tarball & wheel (python3 -m build)"
+	@echo "  make pkg-all    - Build all platforms concurrently"
 	@echo "  make clean      - Clean build and cache artifacts"
 
 install:
@@ -38,6 +41,15 @@ pkg-aur:
 
 pkg-repo:
 	bash packaging/pacman-repo/build-repo.sh
+
+pkg-deb:
+	bash packaging/debian/build-deb.sh
+
+pkg-pypi:
+	python3 -m build --wheel --sdist
+
+pkg-all:
+	bash packaging/scripts/build-all.sh
 
 clean:
 	rm -rf build/ dist/ *.egg-info .pytest_cache/ .coverage htmlcov/

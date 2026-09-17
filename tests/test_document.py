@@ -63,3 +63,29 @@ def test_metadata_extraction():
     assert "#security" in task.tags
     assert "@backend" in task.tags
     assert "+v1" in task.tags
+
+
+def test_set_priority_and_smart_extraction(temp_workspace):
+    todo_file = temp_workspace["todo_file"]
+    doc = TodoDocument(filepath=todo_file)
+
+    # Smart priority extraction from title
+    ok, msg = doc.add_task("Fix urgent login issue p1")
+    assert ok
+    task = doc.tasks[0]
+    assert task.priority == "P1"
+    assert "Fix urgent login issue [P1]" in task.text
+
+    # Change priority to P2
+    ok, msg = doc.set_priority(task.id, "P2")
+    assert ok
+    doc.load()
+    assert doc.tasks[0].priority == "P2"
+    assert "[P2]" in doc.tasks[0].text
+
+    # Clear priority
+    ok, msg = doc.set_priority(task.id, "none")
+    assert ok
+    doc.load()
+    assert doc.tasks[0].priority == ""
+    assert "[P" not in doc.tasks[0].text

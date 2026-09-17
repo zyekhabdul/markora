@@ -6,7 +6,7 @@ import os
 import re
 import datetime
 import tempfile
-from .config import TODO_FILE
+from .config import TODO_FILE, get_todo_file
 
 TASK_REGEX = re.compile(r"^(\s*[-*+]\s*\[)([ xX])(\]\s*)(.*)$")
 
@@ -41,8 +41,8 @@ class Task:
 
 
 class TodoDocument:
-    def __init__(self, filepath=TODO_FILE):
-        self.filepath = filepath
+    def __init__(self, filepath=None):
+        self.filepath = filepath or get_todo_file()
         self.lines = []
         self.tasks = []
         self.sections = []
@@ -144,6 +144,38 @@ class TodoDocument:
         self.save()
         return True, f"Renamed Task #{task_id}"
 
+    def set_priority(self, task_id, priority=""):
+        task = self.get_task(task_id)
+        if not task:
+            return False, f"Task ID {task_id} not found."
+        clean_text = re.sub(r"\s*\[(P[0-9]+|\([A-E]\))\]\s*", " ", task.text).strip()
+        clean_text = re.sub(r"\s*\b(P[0-9]+|\([A-E]\))\b\s*$", "", clean_text).strip()
+        new_prio = priority.upper().strip() if priority and priority.lower() not in ("none", "0", "clear", "") else ""
+        if new_prio:
+            new_text = f"{clean_text} [{new_prio}]"
+        else:
+            new_text = clean_text
+        ok, msg = self.edit_task_text(task_id, new_text)
+        if not ok:
+            return False, msg
+
+        # Synchronize any sublines specifying Priority
+        start_idx = task.line_idx
+        for i in range(start_idx + 1, len(self.lines)):
+            l = self.lines[i]
+            indent = len(l) - len(l.lstrip())
+            if l.strip() and indent > task.indent:
+                if re.search(r"(?:Priority|Prio)[\s*:]+([Pp][0-9]+|\([A-E]\))", l):
+                    if new_prio:
+                        self.lines[i] = re.sub(r"(?:Priority|Prio)[\s*:]+([Pp][0-9]+|\([A-E]\))", f"Priority: {new_prio}", l)
+                    else:
+                        self.lines[i] = ""
+            else:
+                break
+        self.lines = [line for line in self.lines if line != ""]
+        self.save()
+        return True, f"Task #{task_id} priority set to {'[' + new_prio + ']' if new_prio else 'None'}."
+
     def add_task(self, title, priority="", section=None, scope="", deliverables=""):
         if not self.lines:
             self.load()
@@ -177,6 +209,12 @@ class TodoDocument:
                 insert_idx = len(self.lines)
 
         formatted_title = title.strip()
+        if not priority:
+            tokens = formatted_title.split()
+            if len(tokens) > 1 and re.match(r"^(p[0-9]+|\([a-e]\))$", tokens[-1], re.IGNORECASE):
+                priority = tokens[-1].upper()
+                formatted_title = " ".join(tokens[:-1]).strip()
+
         if priority and not re.search(r"\b(P[0-9]+|\([A-E]\))\b", formatted_title, re.IGNORECASE):
             formatted_title = f"{formatted_title} [{priority.upper()}]"
 

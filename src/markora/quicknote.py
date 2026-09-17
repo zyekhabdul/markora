@@ -4,11 +4,13 @@ QuickNote / Brain Dump Engine
 
 import os
 import datetime
-from .config import QUICKNOTE_FILE
+from .config import QUICKNOTE_FILE, get_quicknote_file
 
 
-def load_quicknote(filepath=QUICKNOTE_FILE):
+def load_quicknote(filepath=None):
     """Load or initialize quicknote markdown file."""
+    if filepath is None:
+        filepath = get_quicknote_file()
     if not os.path.exists(filepath):
         os.makedirs(os.path.dirname(os.path.abspath(filepath)), exist_ok=True)
         scaffold = (
@@ -23,8 +25,10 @@ def load_quicknote(filepath=QUICKNOTE_FILE):
         return f.read().splitlines()
 
 
-def append_quicknote(text, filepath=QUICKNOTE_FILE):
+def append_quicknote(text, filepath=None):
     """Append a new timestamped entry to quicknote."""
+    if filepath is None:
+        filepath = get_quicknote_file()
     load_quicknote(filepath)
     now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
     entry = f"- **{now_str}**: {text.strip()}"

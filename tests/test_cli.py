@@ -24,3 +24,25 @@ def test_cli_quicknote(temp_workspace, capsys):
     main(["quicknote", "Testing quicknote from CLI"])
     captured = capsys.readouterr()
     assert "Appended to QuickNote" in captured.out
+
+
+def test_cli_prio_and_help(temp_workspace, capsys):
+    main(["add", "Task for priority test"])
+    capsys.readouterr()
+
+    # Test prio command
+    main(["prio", "1", "p2"])
+    captured = capsys.readouterr()
+    assert "priority set to [P2]" in captured.out
+
+    # Test clearing priority
+    main(["prio", "1", "none"])
+    captured = capsys.readouterr()
+    assert "priority set to [NONE]" in captured.out
+
+    # Test help command
+    main(["help"])
+    captured = capsys.readouterr()
+    assert "Markora v" in captured.out
+    assert "TODO COMMANDS:" in captured.out
+

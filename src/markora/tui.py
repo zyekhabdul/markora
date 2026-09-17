@@ -26,8 +26,8 @@ class TodoTUI:
     def __init__(self, stdscr, doc):
         self.stdscr = stdscr
         self.doc = doc
-        # 0: QuickNote, 1: To-Do, 2: Notebook, 3: Search
-        self.current_tab = 1
+        # 0: To-Do, 1: QuickNote, 2: Notebook, 3: Search
+        self.current_tab = 0
         self.cursor_idx = 0
         self.scroll_offset = 0
         self.filter_text = ""
@@ -38,6 +38,10 @@ class TodoTUI:
         self.fav_mgr = FavoritesManager()
         self.collapsed_folders = set()
         self.tree_nodes = []
+        try:
+            self.stdscr.clearok(False)
+        except Exception:
+            pass
         self._init_curses()
 
     def cp(self, n):
@@ -91,7 +95,7 @@ class TodoTUI:
         items.append({
             "type": "section",
             "key": "__favorites__",
-            "name": f"⭐ FAVORITES ({len(fav_files)})",
+            "name": f"[*] FAVORITES ({len(fav_files)})",
             "path": None,
             "rel_path": "",
             "depth": 0,
@@ -126,7 +130,7 @@ class TodoTUI:
         items.append({
             "type": "folder",
             "key": "daily-notes",
-            "name": f"📁 daily-notes ({len(daily_files)})",
+            "name": f"[DIR] daily-notes ({len(daily_files)})",
             "path": DAILY_DIR,
             "rel_path": "daily-notes",
             "depth": 0,
@@ -173,7 +177,7 @@ class TodoTUI:
                 folder_items.append({
                     "type": "folder",
                     "key": d_rel,
-                    "name": f"📁 {d} ({count})",
+                    "name": f"[DIR] {d} ({count})",
                     "path": d_full,
                     "rel_path": d_rel,
                     "depth": depth,
@@ -211,7 +215,7 @@ class TodoTUI:
         items.append({
             "type": "folder",
             "key": "notes",
-            "name": f"📁 notes ({notes_count})",
+            "name": f"[DIR] notes ({notes_count})",
             "path": NOTES_DIR,
             "rel_path": "notes",
             "depth": 0,
@@ -230,7 +234,7 @@ class TodoTUI:
                 items.append({
                     "type": "folder",
                     "key": "__root__",
-                    "name": f"📁 root documents ({len(root_files)})",
+                    "name": f"[DIR] root documents ({len(root_files)})",
                     "path": DOCS_DIR,
                     "rel_path": ".",
                     "depth": 0,
@@ -259,19 +263,23 @@ class TodoTUI:
 
         return items
 
-    def refresh_data(self):
-        self.fav_mgr.load()
-        self.quicknote_lines = load_quicknote()
-        patterns = [
-            os.path.join(DOCS_DIR, "*.md"),
-            os.path.join(NOTES_DIR, "*.md"),
-            os.path.join(DAILY_DIR, "*.md"),
-        ]
-        files = []
-        for p in patterns:
-            files.extend(glob.glob(p))
-        self.notes_list = sorted(list(set(files)), key=lambda x: os.path.getmtime(x) if os.path.exists(x) else 0, reverse=True)
-        self.tree_nodes = self.build_tree()
+    def refresh_data(self, full=False):
+        if self.current_tab == 1 or full:
+            self.quicknote_lines = load_quicknote()
+
+        if self.current_tab in (2, 3) or full or not self.tree_nodes:
+            self.fav_mgr.load()
+            patterns = [
+                os.path.join(DOCS_DIR, "*.md"),
+                os.path.join(NOTES_DIR, "*.md"),
+                os.path.join(DAILY_DIR, "*.md"),
+            ]
+            files = []
+            for p in patterns:
+                files.extend(glob.glob(p))
+            self.notes_list = sorted(list(set(files)), key=lambda x: os.path.getmtime(x) if os.path.exists(x) else 0, reverse=True)
+            self.tree_nodes = self.build_tree()
+
         if self.current_tab == 3 and self.filter_text:
             self.execute_search()
 
@@ -329,8 +337,8 @@ class TodoTUI:
 
         # 2. Markora 4-Tabs Bar
         tabs = [
-            (" [1] QuickNote ", 0),
-            (" [2] To-Do ", 1),
+            (" [1] To-Do ", 0),
+            (" [2] QuickNote ", 1),
             (" [3] Notebook ", 2),
             (" [4] Search ", 3),
         ]
@@ -351,9 +359,9 @@ class TodoTUI:
         split_w = int(w * 0.55)
 
         if self.current_tab == 0:
-            self._draw_quicknote_view(3, content_h, split_w, w)
-        elif self.current_tab == 1:
             self._draw_todo_view(3, content_h, split_w, w)
+        elif self.current_tab == 1:
+            self._draw_quicknote_view(3, content_h, split_w, w)
         elif self.current_tab == 2:
             self._draw_notebook_view(3, content_h, split_w, w)
         else:
@@ -362,13 +370,13 @@ class TodoTUI:
         # 4. Bottom Key Hints & Status Bar
         self.safe_addstr(h - 2, 0, "─" * w, self.cp(4))
         if self.current_tab == 0:
-            hints = " [a] Append  [t] Timestamp  [e] Edit  [s] Sync Keep  [Tab] Next  [/] Filter  [q] Quit "
+            hints = " [Space] Toggle  [p/1-3] Prio  [a] Add  [r] Edit  [d] Del  [e] Editor  [s] Sync  [Tab] Next  [/] Filter  [q] Quit "
         elif self.current_tab == 1:
-            hints = " [Space] Toggle  [a] Add  [r] Edit  [d] Del  [e] Editor  [s] Sync Keep  [Tab] Next  [/] Filter  [q] Quit "
+            hints = " [a] Append  [t] Timestamp  [e] Edit  [s] Sync  [Tab] Next  [/] Filter  [q] Quit "
         elif self.current_tab == 2:
             hints = " [Enter/l] Open/Expand  [h] Collapse  [f] Star  [r] Rename  [n] New Note  [N] New Folder  [d] Del  [s] Sync  [/] Filter  [q] Quit "
         else:
-            hints = " [/] Search Query  [e/Enter] Open Match  [s] Sync Keep  [Tab] Next  [Esc] Clear  [q] Quit "
+            hints = " [/] Search Query  [e/Enter] Open Match  [s] Sync  [Tab] Next  [Esc] Clear  [q] Quit "
 
         self.safe_addstr(h - 1, 0, hints.ljust(w), self.cp(1))
         if self.status_msg:
@@ -450,7 +458,7 @@ class TodoTUI:
             y = start_y + row
             is_selected = (idx == self.cursor_idx)
 
-            status_char = "✔" if t.done else " "
+            status_char = "x" if t.done else " "
             status_pair = self.cp(2) if t.done else self.cp(3)
             id_str = f"{t.id:2d}"
             prio_badge = f"[{t.priority}] " if t.priority else ""
@@ -500,7 +508,7 @@ class TodoTUI:
                     for sl in sub_lines:
                         if sub_y >= start_y + max_h:
                             break
-                        self.safe_addstr(sub_y, right_x + 2, f"• {sl}", self.cp(4))
+                        self.safe_addstr(sub_y, right_x + 2, f"- {sl}", self.cp(4))
                         sub_y += 1
 
     def _draw_notebook_view(self, start_y, max_h, split_w, full_w):
@@ -527,13 +535,13 @@ class TodoTUI:
 
             depth_indent = "  " * node["depth"]
             if node["type"] in ("section", "folder"):
-                exp_icon = "▼ " if node.get("is_expanded") else "▶ "
+                exp_icon = "[-] " if node.get("is_expanded") else "[+] "
                 prefix = f"{depth_indent}{exp_icon}"
                 name_str = node["name"]
                 color_attr = self.cp(3) | curses.A_BOLD if node["type"] == "section" else self.cp(4) | curses.A_BOLD
             else:
-                branch = "└── " if node.get("is_last") else "├── "
-                star_icon = "★ " if node.get("is_favorite") else "📄 "
+                branch = " `-- " if node.get("is_last") else " |-- "
+                star_icon = "[*] " if node.get("is_favorite") else "    "
                 prefix = f"{depth_indent}{branch}{star_icon}"
                 name_str = node["name"]
                 color_attr = self.cp(3) | curses.A_BOLD if node.get("is_favorite") else 0
@@ -549,7 +557,7 @@ class TodoTUI:
                 self.safe_addstr(y, 0, f"   {line_content}", color_attr)
 
         for r in range(max_h):
-            self.safe_addstr(start_y + r, split_w, "│", self.cp(4))
+            self.safe_addstr(start_y + r, split_w, "|", self.cp(4))
 
         if tree and self.cursor_idx < len(tree):
             selected_node = tree[self.cursor_idx]
@@ -564,9 +572,9 @@ class TodoTUI:
                 is_fav = selected_node.get("is_favorite", False)
 
                 self.safe_addstr(start_y, right_x, f"Note: {rel}", self.cp(4) | curses.A_BOLD)
-                fav_badge = "[ ⭐ FAVORITE ] " if is_fav else ""
+                fav_badge = "[ FAVORITE ] " if is_fav else ""
                 self.safe_addstr(start_y + 1, right_x, f"{fav_badge}Modified: {mtime} | Size: {size/1024:.1f} KB", self.cp(3) if is_fav else self.cp(3))
-                self.safe_addstr(start_y + 2, right_x, "─" * (right_avail - 2), self.cp(4))
+                self.safe_addstr(start_y + 2, right_x, "-" * (right_avail - 2), self.cp(4))
 
                 try:
                     with open(selected_file, "r", encoding="utf-8", errors="ignore") as f:
@@ -580,16 +588,16 @@ class TodoTUI:
             else:
                 name = selected_node["name"]
                 count = selected_node.get("child_count", 0)
-                status = "Expanded (▼)" if selected_node.get("is_expanded") else "Collapsed (▶)"
+                status = "Expanded [-]" if selected_node.get("is_expanded") else "Collapsed [+]"
                 self.safe_addstr(start_y, right_x, f"Directory / Section: {name}", self.cp(4) | curses.A_BOLD)
                 self.safe_addstr(start_y + 1, right_x, f"Items: {count} | Status: {status}", self.cp(3))
-                self.safe_addstr(start_y + 2, right_x, "─" * (right_avail - 2), self.cp(4))
+                self.safe_addstr(start_y + 2, right_x, "-" * (right_avail - 2), self.cp(4))
                 self.safe_addstr(start_y + 4, right_x, "Navigation Actions:", curses.A_BOLD)
-                self.safe_addstr(start_y + 5, right_x, " • [Enter / l] : Expand / Collapse folder", self.cp(4))
-                self.safe_addstr(start_y + 6, right_x, " • [h]         : Collapse folder / jump to parent", self.cp(4))
-                self.safe_addstr(start_y + 7, right_x, " • [n]         : Create new note inside this folder", self.cp(4))
-                self.safe_addstr(start_y + 8, right_x, " • [N / m]     : Create new subfolder here", self.cp(4))
-                self.safe_addstr(start_y + 9, right_x, " • [f]         : Star / Favorite note", self.cp(3))
+                self.safe_addstr(start_y + 5, right_x, " - [Enter / l] : Expand / Collapse folder", self.cp(4))
+                self.safe_addstr(start_y + 6, right_x, " - [h]         : Collapse folder / jump to parent", self.cp(4))
+                self.safe_addstr(start_y + 7, right_x, " - [n]         : Create new note inside this folder", self.cp(4))
+                self.safe_addstr(start_y + 8, right_x, " - [N / m]     : Create new subfolder here", self.cp(4))
+                self.safe_addstr(start_y + 9, right_x, " - [f]         : Star / Favorite note", self.cp(3))
 
     def _draw_search_view(self, start_y, max_h, split_w, full_w):
         results = self.search_results
@@ -740,9 +748,9 @@ class TodoTUI:
                 elif bstate & (curses.BUTTON5_PRESSED if hasattr(curses, "BUTTON5_PRESSED") else 0x200000):
                     max_len = 0
                     if self.current_tab == 0:
-                        max_len = len(self.quicknote_lines)
-                    elif self.current_tab == 1:
                         max_len = len(self.get_filtered_tasks())
+                    elif self.current_tab == 1:
+                        max_len = len(self.quicknote_lines)
                     elif self.current_tab == 2:
                         max_len = len(self.get_filtered_notes())
                     else:
@@ -755,25 +763,25 @@ class TodoTUI:
                 if bstate & (curses.BUTTON1_CLICKED | curses.BUTTON1_PRESSED | curses.BUTTON1_DOUBLE_CLICKED | curses.BUTTON1_RELEASED):
                     # 1. Click on Header Tabs (my == 1)
                     if my == 1:
-                        if 2 <= mx < 18:
+                        if 2 <= mx < 15:
                             self.current_tab = 0
                             self.cursor_idx = 0
                             self.scroll_offset = 0
                             self.refresh_data()
-                            self.status_msg = "Switched to QuickNote"
-                        elif 19 <= mx < 32:
+                            self.status_msg = "Switched to To-Do"
+                        elif 15 <= mx < 32:
                             self.current_tab = 1
                             self.cursor_idx = 0
                             self.scroll_offset = 0
                             self.refresh_data()
-                            self.status_msg = "Switched to To-Do"
-                        elif 33 <= mx < 48:
+                            self.status_msg = "Switched to QuickNote"
+                        elif 32 <= mx < 48:
                             self.current_tab = 2
                             self.cursor_idx = 0
                             self.scroll_offset = 0
                             self.refresh_data()
                             self.status_msg = "Switched to Notebook"
-                        elif 49 <= mx < 63:
+                        elif 48 <= mx < 63:
                             self.current_tab = 3
                             self.cursor_idx = 0
                             self.scroll_offset = 0
@@ -791,28 +799,6 @@ class TodoTUI:
                     # 2. Click on Bottom Action Hints (my == h - 1)
                     if my == h - 1:
                         if self.current_tab == 0:
-                            if 15 <= mx < 30:  # [a] Append
-                                text = self.prompt_input("QuickNote: ")
-                                if text:
-                                    append_quicknote(text)
-                                    self.refresh_data()
-                                    self.status_msg = "Appended to QuickNote"
-                            elif 30 <= mx < 45:  # [t] Timestamp
-                                append_quicknote(f"--- Timestamp: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ---")
-                                self.refresh_data()
-                                self.status_msg = "Inserted timestamp"
-                            elif 45 <= mx < 58:  # [e] Edit
-                                curses.endwin()
-                                subprocess.run([get_editor(), QUICKNOTE_FILE])
-                                self.stdscr = curses.initscr()
-                                self._init_curses()
-                                self.refresh_data()
-                            elif 58 <= mx < 70:  # [Tab] Next
-                                self.current_tab = (self.current_tab + 1) % 4
-                                self.refresh_data()
-                            elif mx >= 70:       # [q] Quit
-                                break
-                        elif self.current_tab == 1:
                             if 15 <= mx < 30:  # [Space] Toggle
                                 tasks = self.get_filtered_tasks()
                                 if tasks and self.cursor_idx < len(tasks):
@@ -839,6 +825,28 @@ class TodoTUI:
                                 self.current_tab = (self.current_tab + 1) % 4
                                 self.refresh_data()
                             elif mx >= 80:       # [q] Quit
+                                break
+                        elif self.current_tab == 1:
+                            if 15 <= mx < 30:  # [a] Append
+                                text = self.prompt_input("QuickNote: ")
+                                if text:
+                                    append_quicknote(text)
+                                    self.refresh_data()
+                                    self.status_msg = "Appended to QuickNote"
+                            elif 30 <= mx < 45:  # [t] Timestamp
+                                append_quicknote(f"--- Timestamp: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ---")
+                                self.refresh_data()
+                                self.status_msg = "Inserted timestamp"
+                            elif 45 <= mx < 58:  # [e] Edit
+                                curses.endwin()
+                                subprocess.run([get_editor(), QUICKNOTE_FILE])
+                                self.stdscr = curses.initscr()
+                                self._init_curses()
+                                self.refresh_data()
+                            elif 58 <= mx < 70:  # [Tab] Next
+                                self.current_tab = (self.current_tab + 1) % 4
+                                self.refresh_data()
+                            elif mx >= 70:       # [q] Quit
                                 break
                         elif self.current_tab == 2:
                             if 15 <= mx < 30:  # [n] New Note
@@ -909,6 +917,14 @@ class TodoTUI:
                         target_idx = self.scroll_offset + clicked_row
 
                         if self.current_tab == 0:
+                            tasks = self.get_filtered_tasks()
+                            if target_idx < len(tasks):
+                                self.cursor_idx = target_idx
+                                if mx <= 8 or (bstate & curses.BUTTON1_DOUBLE_CLICKED):
+                                    _, self.status_msg = self.doc.toggle_task(tasks[target_idx].id)
+                                else:
+                                    self.status_msg = f"Selected task #{tasks[target_idx].id}"
+                        elif self.current_tab == 1:
                             if target_idx < len(self.quicknote_lines):
                                 self.cursor_idx = target_idx
                                 if bstate & curses.BUTTON1_DOUBLE_CLICKED:
@@ -917,14 +933,6 @@ class TodoTUI:
                                     self.stdscr = curses.initscr()
                                     self._init_curses()
                                     self.refresh_data()
-                        elif self.current_tab == 1:
-                            tasks = self.get_filtered_tasks()
-                            if target_idx < len(tasks):
-                                self.cursor_idx = target_idx
-                                if mx <= 8 or (bstate & curses.BUTTON1_DOUBLE_CLICKED):
-                                    _, self.status_msg = self.doc.toggle_task(tasks[target_idx].id)
-                                else:
-                                    self.status_msg = f"Selected task #{tasks[target_idx].id}"
                         elif self.current_tab == 2:
                             if target_idx < len(self.tree_nodes):
                                 self.cursor_idx = target_idx
@@ -958,7 +966,15 @@ class TodoTUI:
             # Keyboard Tab Switching (1, 2, 3, 4, Tab, Shift-Tab)
             if ch in [ord("\t"), ord("1"), ord("2"), ord("3"), ord("4")]:
                 if ch == ord("1"):
-                    self.current_tab = 0
+                    if self.current_tab == 0:
+                        tasks = self.get_filtered_tasks()
+                        if tasks and self.cursor_idx < len(tasks):
+                            t = tasks[self.cursor_idx]
+                            self.doc.set_priority(t.id, "P1")
+                            self.status_msg = f"Task #{t.id} priority set to [P1]"
+                        continue
+                    else:
+                        self.current_tab = 0
                 elif ch == ord("2"):
                     self.current_tab = 1
                 elif ch == ord("3"):
@@ -970,7 +986,7 @@ class TodoTUI:
                 self.cursor_idx = 0
                 self.scroll_offset = 0
                 self.refresh_data()
-                tab_names = ["QuickNote", "To-Do", "Notebook", "Search"]
+                tab_names = ["To-Do", "QuickNote", "Notebook", "Search"]
                 self.status_msg = f"Switched to {tab_names[self.current_tab]}"
                 continue
 
@@ -981,9 +997,9 @@ class TodoTUI:
             elif ch in [curses.KEY_DOWN, ord("j")]:
                 max_len = 0
                 if self.current_tab == 0:
-                    max_len = len(self.quicknote_lines)
-                elif self.current_tab == 1:
                     max_len = len(self.get_filtered_tasks())
+                elif self.current_tab == 1:
+                    max_len = len(self.quicknote_lines)
                 elif self.current_tab == 2:
                     max_len = len(self.get_filtered_notes())
                 else:
@@ -995,9 +1011,9 @@ class TodoTUI:
             elif ch == ord("G"):
                 max_len = 0
                 if self.current_tab == 0:
-                    max_len = len(self.quicknote_lines)
-                elif self.current_tab == 1:
                     max_len = len(self.get_filtered_tasks())
+                elif self.current_tab == 1:
+                    max_len = len(self.quicknote_lines)
                 elif self.current_tab == 2:
                     max_len = len(self.get_filtered_notes())
                 else:
@@ -1021,9 +1037,9 @@ class TodoTUI:
                     self.search_results = []
                 self.status_msg = "Filter cleared"
 
-            # Action: Rename / Edit Title (Tab 1 & Tab 2) or Reload (Tab 0 & Tab 3)
+            # Action: Rename / Edit Title (Tab 0 To-Do & Tab 2 Notebook)
             elif ch in [ord("r"), ord("R")]:
-                if self.current_tab == 1:
+                if self.current_tab == 0:
                     tasks = self.get_filtered_tasks()
                     if tasks and self.cursor_idx < len(tasks):
                         target_task = tasks[self.cursor_idx]
@@ -1050,40 +1066,91 @@ class TodoTUI:
             # Force Reload from disk (Ctrl+R)
             elif ch == 18:
                 self.doc.load()
-                self.refresh_data()
+                self.refresh_data(full=True)
                 self.status_msg = "Reloaded from disk"
 
             # Quit
             elif ch in [ord("q"), ord("Q")]:
                 break
 
-            # Action: Toggle Done (Tab 1 To-Do)
-            elif ch in [ord(" "), ord("x")] and self.current_tab == 1:
+            # Action: Toggle Done (Tab 0 To-Do)
+            elif ch in [ord(" "), ord("x")] and self.current_tab == 0:
                 tasks = self.get_filtered_tasks()
                 if tasks and self.cursor_idx < len(tasks):
                     target_task = tasks[self.cursor_idx]
                     ok, msg = self.doc.toggle_task(target_task.id)
                     self.status_msg = msg
 
+            # Action: Priority Hotkeys (Tab 0 To-Do)
+            elif ch in [ord("p"), ord("P")] and self.current_tab == 0:
+                tasks = self.get_filtered_tasks()
+                if tasks and self.cursor_idx < len(tasks):
+                    target_task = tasks[self.cursor_idx]
+                    p_input = self.prompt_input("Priority [1=P1, 2=P2, 3=P3, 0=None, Enter=Cycle]: ").strip().lower()
+                    if not p_input:
+                        cycle_map = {"": "P1", "P1": "P2", "P2": "P3", "P3": "", "(A)": "P2", "(B)": "P3", "(C)": ""}
+                        new_prio = cycle_map.get(target_task.priority, "P1")
+                    elif p_input in ["1", "p1"]:
+                        new_prio = "P1"
+                    elif p_input in ["2", "p2"]:
+                        new_prio = "P2"
+                    elif p_input in ["3", "p3"]:
+                        new_prio = "P3"
+                    elif p_input in ["0", "none", "clear", "-", ""]:
+                        new_prio = ""
+                    else:
+                        new_prio = p_input.upper()
+                    self.doc.set_priority(target_task.id, new_prio)
+                    disp = f"[{new_prio}]" if new_prio else "None"
+                    self.status_msg = f"Task #{target_task.id} priority set to {disp}"
+
+            elif ch == ord("0") and self.current_tab == 0:
+                tasks = self.get_filtered_tasks()
+                if tasks and self.cursor_idx < len(tasks):
+                    target_task = tasks[self.cursor_idx]
+                    self.doc.set_priority(target_task.id, "")
+                    self.status_msg = f"Task #{target_task.id} priority cleared"
+
+            elif ch == ord("!") and self.current_tab == 0:
+                tasks = self.get_filtered_tasks()
+                if tasks and self.cursor_idx < len(tasks):
+                    target_task = tasks[self.cursor_idx]
+                    self.doc.set_priority(target_task.id, "P1")
+                    self.status_msg = f"Task #{target_task.id} priority set to [P1]"
+
+            elif ch == ord("@") and self.current_tab == 0:
+                tasks = self.get_filtered_tasks()
+                if tasks and self.cursor_idx < len(tasks):
+                    target_task = tasks[self.cursor_idx]
+                    self.doc.set_priority(target_task.id, "P2")
+                    self.status_msg = f"Task #{target_task.id} priority set to [P2]"
+
+            elif ch == ord("#") and self.current_tab == 0:
+                tasks = self.get_filtered_tasks()
+                if tasks and self.cursor_idx < len(tasks):
+                    target_task = tasks[self.cursor_idx]
+                    self.doc.set_priority(target_task.id, "P3")
+                    self.status_msg = f"Task #{target_task.id} priority set to [P3]"
+
             # Action: Add Item (Context-Aware)
             elif ch == ord("a"):
-                if self.current_tab == 0:  # QuickNote Append
-                    text = self.prompt_input("QuickNote: ")
-                    if text:
-                        append_quicknote(text)
-                        self.refresh_data()
-                        self.status_msg = "Appended to QuickNote"
-                        self.cursor_idx = len(self.quicknote_lines) - 1
-                elif self.current_tab == 1:  # Add Task
+                if self.current_tab == 0:  # Add Task
                     title = self.prompt_input("New Task Title: ")
                     if title:
                         prio = self.prompt_input("Priority (P1/P2/P3): ")
                         ok, msg = self.doc.add_task(title=title, priority=prio)
                         self.status_msg = msg
                         self.cursor_idx = len(self.doc.tasks) - 1
+                elif self.current_tab == 1:  # QuickNote Append
+                    text = self.prompt_input("QuickNote: ")
+                    if text:
+                        append_quicknote(text)
+                        self.refresh_data()
+                        self.status_msg = "Appended to QuickNote"
+                        self.cursor_idx = len(self.quicknote_lines) - 1
 
-            # Action: Timestamp Insert (Tab 0 QuickNote)
-            elif ch == ord("t") and self.current_tab == 0:
+            # Action: Timestamp Insert (Tab 1 QuickNote)
+            elif ch == ord("t") and self.current_tab == 1:
                 ts = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 append_quicknote(f"--- Log: {ts} ---")
                 self.refresh_data()
@@ -1134,7 +1201,7 @@ class TodoTUI:
 
             # Action: Delete Item
             elif ch in [ord("d"), ord("D")]:
-                if self.current_tab == 1:  # Delete Task
+                if self.current_tab == 0:  # Delete Task
                     tasks = self.get_filtered_tasks()
                     if tasks and self.cursor_idx < len(tasks):
                         target_task = tasks[self.cursor_idx]
@@ -1151,7 +1218,7 @@ class TodoTUI:
                             if confirm.lower() == "y":
                                 try:
                                     os.remove(node["path"])
-                                    self.refresh_data()
+                                    self.refresh_data(full=True)
                                     self.status_msg = f"Deleted {node['name']}"
                                     self.cursor_idx = max(0, self.cursor_idx - 1)
                                 except Exception as e:
@@ -1161,7 +1228,7 @@ class TodoTUI:
                             if confirm.lower() == "y":
                                 try:
                                     shutil.rmtree(node["path"])
-                                    self.refresh_data()
+                                    self.refresh_data(full=True)
                                     self.status_msg = f"Deleted folder {node['name']}"
                                     self.cursor_idx = max(0, self.cursor_idx - 1)
                                 except Exception as e:
@@ -1180,7 +1247,7 @@ class TodoTUI:
                             target_dir = os.path.dirname(cur_node["path"])
                     new_folder_path = os.path.join(target_dir, folder_name)
                     os.makedirs(new_folder_path, exist_ok=True)
-                    self.refresh_data()
+                    self.refresh_data(full=True)
                     self.status_msg = f"Created folder {folder_name}/"
 
             # Action: New Note (Tab 2 Notebook)
@@ -1206,19 +1273,19 @@ class TodoTUI:
                     subprocess.run([get_editor(), filepath])
                     self.stdscr = curses.initscr()
                     self._init_curses()
-                    self.refresh_data()
+                    self.refresh_data(full=True)
                     self.status_msg = f"Created {os.path.basename(filepath)}"
 
             # Action: Edit / Open in Editor / Toggle Expand
             elif ch in [ord("e"), ord("\n"), 10, 13]:
                 if self.current_tab == 0:
                     curses.endwin()
-                    subprocess.run([get_editor(), QUICKNOTE_FILE])
+                    subprocess.run([get_editor(), self.doc.filepath])
                     self.stdscr = curses.initscr()
                     self._init_curses()
                 elif self.current_tab == 1:
                     curses.endwin()
-                    subprocess.run([get_editor(), self.doc.filepath])
+                    subprocess.run([get_editor(), QUICKNOTE_FILE])
                     self.stdscr = curses.initscr()
                     self._init_curses()
                 elif self.current_tab == 2:
@@ -1229,13 +1296,13 @@ class TodoTUI:
                                 self.collapsed_folders.discard(node["key"])
                             else:
                                 self.collapsed_folders.add(node["key"])
-                            self.refresh_data()
+                            self.refresh_data(full=True)
                         elif node["type"] == "file" and node.get("path"):
                             curses.endwin()
                             subprocess.run([get_editor(), node["path"]])
                             self.stdscr = curses.initscr()
                             self._init_curses()
-                            self.refresh_data()
+                            self.refresh_data(full=True)
                 elif self.current_tab == 3:
                     if self.search_results and self.cursor_idx < len(self.search_results):
                         fp, ln, _ = self.search_results[self.cursor_idx]
@@ -1251,14 +1318,14 @@ class TodoTUI:
                 try:
                     km = KeepSyncManager()
                     if not km.is_authenticated():
-                        self.status_msg = "Keep not connected. Run 'markora keep auth' in CLI."
+                        self.status_msg = "Keep not connected. Run 'td keep auth' in CLI."
                     else:
                         h, w = self.stdscr.getmaxyx()
                         self.safe_addstr(0, 0, " [ SYNCING GOOGLE KEEP... ] ".center(w), self.cp(3) | curses.A_BOLD)
                         self.stdscr.refresh()
-                        pulled, pushed = km.sync()
+                        pulled, pushed = km.sync(doc=self.doc)
                         self.doc.load()
-                        self.refresh_data()
+                        self.refresh_data(full=True)
                         self.status_msg = f"Keep: {pulled} pulled, {pushed} pushed"
                 except Exception as e:
                     self.status_msg = f"Keep Sync error: {str(e)[:35]}"
@@ -1272,15 +1339,16 @@ class TodoTUI:
         help_lines = [
             "  MARKORA NOTEBOOK - KEYBOARD SHORTCUTS  ",
             "─────────────────────────────────────────",
-            "  1 / 2 / 3 / 4  : Switch QuickNote/To-Do/Notebook/Search",
+            "  1 / 2 / 3 / 4  : Switch To-Do/QuickNote/Notebook/Search",
             "  Tab            : Cycle through 4 tabs",
-            "  j / k / ↑ / ↓  : Navigate items / tree scroll",
-            "  Enter / l / →  : Open note / Expand folder",
-            "  h / ←          : Collapse folder / Jump to parent",
-            "  f / p          : Star / Toggle Favorite [⭐]",
+            "  j / k / up / dn: Navigate items / list scroll",
+            "  Enter / l / -> : Open note / Expand folder",
+            "  h / <-         : Collapse folder / Jump to parent",
+            "  p / 0 / 1 / 2  : Set or clear task priority (To-Do)",
+            "  f              : Star / Toggle Favorite [*]",
             "  r / R          : Rename note/folder or edit task title",
-            "  Space / x      : Toggle task checkbox [ ] <-> [✔]",
-            "  a              : Append QuickNote or Add To-Do task",
+            "  Space / x      : Toggle task checkbox [ ] <-> [x]",
+            "  a              : Add To-Do task or Append QuickNote",
             "  t              : Insert timestamp log (QuickNote)",
             "  n              : Create new note in current folder",
             "  N / m          : Create new subfolder",

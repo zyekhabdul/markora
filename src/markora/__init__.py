@@ -9,9 +9,18 @@ __author__ = "zyekhabdul"
 from .document import Task, TodoDocument
 from .quicknote import load_quicknote, append_quicknote
 from .favorites import FavoritesManager
-from .keep import KeepSyncManager
-from .tui import TodoTUI, start_tui
 from .cli import main
+
+
+def __getattr__(name):
+    if name in ("TodoTUI", "start_tui"):
+        from .tui import TodoTUI, start_tui
+        return TodoTUI if name == "TodoTUI" else start_tui
+    if name == "KeepSyncManager":
+        from .keep import KeepSyncManager
+        return KeepSyncManager
+    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
+
 
 __all__ = [
     "Task",

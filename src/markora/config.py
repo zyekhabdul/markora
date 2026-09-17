@@ -5,12 +5,31 @@ Configuration and Environment Settings for Markora
 import os
 import shutil
 
-# --- CONFIGURATION & PATH RESOLUTION ---
-DOCS_DIR = os.environ.get("MARKORA_NOTES_DIR") or os.environ.get("NOTES_DIR", os.path.expanduser("~/Documents"))
-QUICKNOTE_FILE = os.environ.get("MARKORA_QUICKNOTE_FILE") or os.path.join(DOCS_DIR, "quicknote.md")
-TODO_FILE = os.environ.get("MARKORA_TODO_FILE") or os.environ.get("TODO_FILE", os.path.join(DOCS_DIR, "TODOLIST.md"))
-NOTES_DIR = os.path.join(DOCS_DIR, "notes")
-DAILY_DIR = os.path.join(DOCS_DIR, "daily-notes")
+def get_docs_dir():
+    return os.environ.get("MARKORA_NOTES_DIR") or os.environ.get("NOTES_DIR", os.path.expanduser("~/Documents"))
+
+
+def get_quicknote_file():
+    return os.environ.get("MARKORA_QUICKNOTE_FILE") or os.path.join(get_docs_dir(), "quicknote.md")
+
+
+def get_todo_file():
+    return os.environ.get("MARKORA_TODO_FILE") or os.environ.get("TODO_FILE", os.path.join(get_docs_dir(), "TODOLIST.md"))
+
+
+def get_notes_dir():
+    return os.path.join(get_docs_dir(), "notes")
+
+
+def get_daily_dir():
+    return os.path.join(get_docs_dir(), "daily-notes")
+
+
+DOCS_DIR = get_docs_dir()
+QUICKNOTE_FILE = get_quicknote_file()
+TODO_FILE = get_todo_file()
+NOTES_DIR = get_notes_dir()
+DAILY_DIR = get_daily_dir()
 
 # Config directory (~/.config/markora with legacy fallback to ~/.config/td)
 LEGACY_CONFIG_DIR = os.path.expanduser("~/.config/td")
@@ -31,9 +50,9 @@ FAVORITES_FILE = os.path.join(CONFIG_DIR, "favorites.json")
 
 def ensure_directories():
     """Ensure basic storage directories exist."""
-    os.makedirs(DOCS_DIR, exist_ok=True)
-    os.makedirs(NOTES_DIR, exist_ok=True)
-    os.makedirs(DAILY_DIR, exist_ok=True)
+    os.makedirs(get_docs_dir(), exist_ok=True)
+    os.makedirs(get_notes_dir(), exist_ok=True)
+    os.makedirs(get_daily_dir(), exist_ok=True)
     os.makedirs(CONFIG_DIR, exist_ok=True)
 
 

@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="markora",
-    version="1.0.0",
+    version="1.1.0",
     package_dir={"": "src"},
     packages=find_packages(where="src"),
     entry_points={

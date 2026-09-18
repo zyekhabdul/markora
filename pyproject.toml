@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "markora"
-version = "1.0.0"
-description = "⚡ Sovereign Markor-style Markdown Notebook, QuickNotes & Todo TUI for Terminal Power Users"
+version = "1.1.0"
+description = "Sovereign Markor-style Markdown Notebook, QuickNotes & Todo TUI for Terminal Power Users"
 readme = "README.md"
 requires-python = ">=3.8"
 license = { text = "MIT" }

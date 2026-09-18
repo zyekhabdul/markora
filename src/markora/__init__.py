@@ -2,7 +2,7 @@
 Markora: Sovereign Markor-style Markdown Notebook, QuickNotes & Todo TUI
 """
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 __app_name__ = "markora"
 __author__ = "zyekhabdul"
 

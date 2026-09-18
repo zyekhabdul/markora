@@ -3,7 +3,7 @@ _markora_completions() {
     local cur prev subcommands
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
-    subcommands="quicknote qn scratch list ls todo add a done do check undone undo uncheck toggle x rm del remove edit e note n notes nl find search grep rename mv ui tui dui app gui keep gk gkeep fav favorite pin star"
+    subcommands="quicknote qn list ls add a done do undone undo toggle x rm edit e note n notes nl find search rename mv ui gui keep fav"
 
     if [[ ${COMP_CWORD} -eq 1 ]]; then
         COMPREPLY=( $(compgen -W "${subcommands} -h --help -v --version" -- "${cur}") )
@@ -16,13 +16,13 @@ _markora_completions() {
                 COMPREPLY=( $(compgen -W "-p --prio -s --section --help" -- "${cur}") )
             fi
             ;;
-        list|ls|todo)
+        list|ls)
             COMPREPLY=( $(compgen -W "-p --pending -d --done -t --tag -s --section -c --compact" -- "${cur}") )
             ;;
-        keep|gk|gkeep)
+        keep)
             COMPREPLY=( $(compgen -W "auth status pull push sync logout --manual" -- "${cur}") )
             ;;
-        fav|favorite|pin|star)
+        fav)
             COMPREPLY=( $(compgen -W "list ls add rm remove toggle" -- "${cur}") )
             ;;
     esac
@@ -30,5 +30,3 @@ _markora_completions() {
 
 complete -F _markora_completions markora
 complete -F _markora_completions td
-complete -F _markora_completions todo
-complete -F _markora_completions mo

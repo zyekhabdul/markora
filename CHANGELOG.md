@@ -5,6 +5,17 @@ All notable changes to **Markora** will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-09-18
+
+### Changed
+- **CLI Command Streamlining**: Unified all commands under canonical `markora` with single short alias `td` (2-keystroke shortcut).
+- **TUI-First Default**: Running `markora` or `td` without arguments launches interactive 4-tab Curses TUI on TTY (with automatic fallback to todo listing when piped or running in non-interactive scripts).
+- **Subcommand Pruning**: Consolidated subcommand aliases to 1 primary command + 1 short alias (`list`/`ls`, `add`/`a`, `done`/`do`, `undone`/`undo`, `toggle`/`x`, `rm`, `edit`/`e`, `quicknote`/`qn`, `note`/`n`, `notes`/`nl`, `find`/`search`, `rename`/`mv`, `fav`, `keep`, `ui`, `gui`).
+- **Shell Completions**: Updated Bash and Zsh completions to match streamlined command matrix and removed legacy aliases.
+
+### Removed
+- Removed legacy root aliases `todo` and `mo` from packaging manifests, binary directory, and completions.
+
 ## [1.0.0] - 2026-09-02
 
 ### Added

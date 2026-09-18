@@ -15,7 +15,7 @@
       {
         packages.default = pythonPackages.buildPythonApplication {
           pname = "markora";
-          version = "1.0.0";
+          version = "1.1.0";
           src = ./.;
 
           format = "setuptools";

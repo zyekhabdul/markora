@@ -1,6 +1,6 @@
 # Maintainer: zyekhabdul <zyekhabdulqadirjailani@gmail.com>
 pkgname=markora
-pkgver=1.0.0
+pkgver=1.1.0
 pkgrel=1
 pkgdesc="Sovereign Markor-style Markdown Notebook, QuickNotes & Todo TUI for Terminal Power Users"
 arch=('any')
@@ -13,7 +13,7 @@ optdepends=(
     'python-playwright: Automated browser login for Google Keep'
 )
 source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
-sha256sums=('da1341d812e50abc080b86ce26e033b972543777904183acd2567edc7e1175e3')
+sha256sums=('SKIP')
 
 build() {
     cd "$pkgname-$pkgver"

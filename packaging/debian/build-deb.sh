@@ -3,7 +3,7 @@ set -euo pipefail
 
 # Build .deb package using dpkg-deb
 PKG_NAME="markora"
-PKG_VER="1.0.0"
+PKG_VER="1.1.0"
 PKG_ARCH="all"
 DIST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORK_DIR="$DIST_DIR/build_deb/${PKG_NAME}_${PKG_VER}_${PKG_ARCH}"
@@ -17,7 +17,7 @@ mkdir -p "$WORK_DIR/usr/share/doc/$PKG_NAME"
 
 cat << 'EOF' > "$WORK_DIR/DEBIAN/control"
 Package: markora
-Version: 1.0.0
+Version: 1.1.0
 Section: utils
 Priority: optional
 Architecture: all
@@ -27,7 +27,7 @@ Maintainer: zyekhabdul <zyekhabdulqadirjailani@gmail.com>
 Description: Sovereign Markor-style Markdown Notebook, QuickNotes & Todo TUI
  Markora is an ultra-lightweight, zero-dependency Markdown notebook,
  task manager, and QuickNotes TUI designed for terminal power users.
- Includes aliases: td, todo, mo.
+ Includes alias: td.
 EOF
 
 # Copy source module
@@ -45,8 +45,6 @@ EOF
 
 chmod 755 "$WORK_DIR/usr/bin/markora"
 ln -sf markora "$WORK_DIR/usr/bin/td"
-ln -sf markora "$WORK_DIR/usr/bin/todo"
-ln -sf markora "$WORK_DIR/usr/bin/mo"
 
 # Docs & License
 cp "$PROJECT_ROOT/README.md" "$WORK_DIR/usr/share/doc/$PKG_NAME/"

@@ -1,6 +1,6 @@
 # Maintainer: zyekhabdul <zyekhabdulqadirjailani@gmail.com>
 pkgname=markora-git
-pkgver=1.0.0.r0.g$(git -C /home/fuckadmin/Projects/markora rev-parse --short HEAD 2>/dev/null || echo "latest")
+pkgver=1.1.0.r0.g$(git rev-parse --short HEAD 2>/dev/null || echo "latest")
 pkgrel=1
 pkgdesc="Sovereign Markor-style Markdown Notebook, QuickNotes & Todo TUI (development branch)"
 arch=('any')

@@ -53,3 +53,4 @@ pkg-all:
 clean:
 	rm -rf build/ dist/ *.egg-info .pytest_cache/ .coverage htmlcov/
 	find . -type d -name "__pycache__" -exec rm -rf {} +
+	rm -rf packaging/aur/src packaging/aur/pkg packaging/aur/*.pkg.tar* packaging/aur/*.tar.gz packaging/debian/build_deb

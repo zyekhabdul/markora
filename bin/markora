@@ -14,9 +14,13 @@ if os.path.isdir(src_path) and src_path not in sys.path:
     sys.path.insert(0, src_path)
 
 # Auto-switch to isolated venv if available
-VENV_PYTHON = os.path.expanduser("~/.local/share/td-venv/bin/python")
-if os.path.exists(VENV_PYTHON) and sys.executable != VENV_PYTHON:
-    os.execv(VENV_PYTHON, [VENV_PYTHON] + sys.argv)
+for venv_py in [
+    os.path.expanduser("~/.local/share/markora-venv/bin/python"),
+    os.path.expanduser("~/.local/share/td-venv/bin/python"),
+]:
+    if os.path.exists(venv_py) and sys.executable != venv_py:
+        os.execv(venv_py, [venv_py] + sys.argv)
+        break
 
 from markora.cli import main
 

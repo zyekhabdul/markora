@@ -35,7 +35,7 @@ If you love the simplicity, offline-first philosophy, and markdown-native archit
 
 - **Zero Cloud Lock-in**: Your data is 100% plain Markdown files in `~/Documents` (or your custom directory). You own your notes forever.
 - **Zero Heavy Dependencies**: Core CLI and interactive TUI run entirely on the Python 3 standard library. No Electron bloat, no node_modules, no heavy frameworks.
-- **Dual Personality**: Use lightning-fast one-liner CLI commands (`markora add`, `markora qn`, or short aliases `td`, `mo`) for scriptability, or fire up the rich interactive 4-tab Curses TUI (`markora ui`) for browsing, editing, and task triage.
+- **Dual Personality**: Run `markora` or `td` directly to launch the interactive 4-tab Curses TUI, or use high-velocity one-liner CLI commands (`td a`, `td ls`, `td qn`) for fast capture and scriptability.
 - **Seamless Portability**: Sync your folder with Syncthing, Nextcloud, Git, or Android Markor without converting formats.
 
 ---
@@ -106,37 +106,41 @@ make symlink
 ---
 
 ## 🚀 CLI Command Reference
-
-All commands support both `markora` and the ultra-short alias `td`:
-
+ 
+All commands support both `markora` and the ultra-short alias `td`. Running either without arguments launches the interactive TUI directly.
+ 
 ```bash
+# --- Launch Interactive TUI (Default) ---
+markora                                   # Launch 4-tab Curses TUI
+td                                        # Same as markora (2-keystroke shortcut)
+td ui                                     # Explicit TUI launcher
+
 # --- QuickNotes ---
 td qn "Remember to review pull request"   # Append thought
 td qn                                     # View quicknotes
 td qn -e                                  # Edit in $EDITOR
 
 # --- Task Management ---
-td add "Ship version 1.0" -p p1           # Add high-priority task
-td add "Research new indexing" -s "Inbox" # Add to specific section
-td list                                   # List all tasks
-td list -p                                # Show only pending tasks
-td list -d                                # Show completed tasks
-td list -t #backend                       # Filter by tag
-td done 1 3                               # Complete tasks #1 and #3
-td undone 2                               # Mark task #2 pending
-td toggle 1                               # Toggle completion status
+td a "Ship version 1.0" -p p1             # Add high-priority task (alias: markora add)
+td a "Research new indexing" -s "Inbox"   # Add to specific section
+td ls                                     # List all tasks (alias: markora list)
+td ls -p                                  # Show only pending tasks
+td ls -d                                  # Show completed tasks
+td ls -t #backend                         # Filter by tag
+td do 1 3                                 # Complete tasks #1 and #3 (alias: markora done)
+td undo 2                                 # Mark task #2 pending (alias: markora undone)
+td x 1                                    # Toggle completion status
 td rm 4                                   # Delete task #4
 
 # --- Markdown Notebook ---
-td note "System Architecture"             # Create new note in notes/
-td note -d                                # Open today's daily note
-td notes                                  # List all notebook files
-td find "authentication"                  # Search across all notes
+td n "System Architecture"                # Create new note in notes/ (alias: markora note)
+td n -d                                   # Open today's daily note
+td nl                                     # List all notebook files (alias: markora notes)
+td find "authentication"                  # Search across all notes (alias: markora search)
 td fav list                               # List starred notes
 td fav add notes/project.md               # Star a note
 
-# --- TUI & Integrations ---
-td ui                                     # Launch interactive 4-tab TUI
+# --- Integrations ---
 td keep auth                              # Connect Google Keep
 td keep sync                              # Two-way sync with Keep
 ```

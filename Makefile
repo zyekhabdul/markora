@@ -26,9 +26,8 @@ symlink:
 	mkdir -p ~/.local/bin
 	ln -sf $(PWD)/bin/markora ~/.local/bin/markora
 	ln -sf $(PWD)/bin/markora ~/.local/bin/td
-	ln -sf $(PWD)/bin/markora ~/.local/bin/todo
-	ln -sf $(PWD)/bin/markora ~/.local/bin/mo
-	@echo "Symlinked to ~/.local/bin/markora, ~/.local/bin/td, ~/.local/bin/todo, ~/.local/bin/mo"
+	rm -f ~/.local/bin/todo ~/.local/bin/mo
+	@echo "Symlinked to ~/.local/bin/markora and ~/.local/bin/td"
 
 test:
 	pytest tests/

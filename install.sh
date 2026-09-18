@@ -23,14 +23,14 @@ fi
 
 chmod +x "${TARGET_FILE}"
 ln -sf "${TARGET_FILE}" "${INSTALL_DIR}/td"
-ln -sf "${TARGET_FILE}" "${INSTALL_DIR}/todo"
-ln -sf "${TARGET_FILE}" "${INSTALL_DIR}/mo"
+rm -f "${INSTALL_DIR}/todo" "${INSTALL_DIR}/mo"
 
 echo "==> Success! Markora installed to ${TARGET_FILE}"
 echo ""
 echo "Quick Start:"
-echo "  markora ui     # Launch interactive 4-tab Curses TUI"
-echo "  td add 'Task'  # Quick add a task"
+echo "  markora        # Launch interactive 4-tab Curses TUI (default)"
+echo "  td ls -p       # Quick list pending tasks"
+echo "  td a 'Task'    # Quick add a task"
 echo "  td qn 'Memo'   # Append to QuickNote"
 echo ""
 if [[ ":$PATH:" != *":${INSTALL_DIR}:"* ]]; then

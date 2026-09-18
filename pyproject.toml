@@ -70,8 +70,6 @@ dev = [
 [project.scripts]
 markora = "markora.cli:main"
 td = "markora.cli:main"
-todo = "markora.cli:main"
-mo = "markora.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/zyekhabdul/markora"

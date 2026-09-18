@@ -457,24 +457,24 @@ def build_parser():
         prog="markora",
         description=f"Markora v{__version__}: Sovereign Markor-style Markdown Notebook, QuickNotes & Todo TUI",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="Examples:\n"
-               "  markora ui                    Launch interactive 4-tab Curses TUI\n"
-               "  markora add 'Finish report' -p p1\n"
-               "  markora qn 'Quick thought'\n"
-               "  markora list -p\n"
-               "  markora done 1 2\n"
+        epilog="Quick Start:\n"
+               "  markora / td                  Launch interactive 4-tab Curses TUI (default)\n"
+               "  td ls -p                      List pending tasks (alias: markora list)\n"
+               "  td a 'Finish report' -p p1    Add new task (alias: markora add)\n"
+               "  td do 1 2                     Mark completed (alias: markora done)\n"
+               "  td qn 'Quick thought'         Append to QuickNote (alias: markora quicknote)\n"
     )
     parser.add_argument("-v", "--version", action="version", version=f"%(prog)s v{__version__}")
     subparsers = parser.add_subparsers(dest="command", help="Subcommand to run")
 
     # quicknote / qn
-    p_qn = subparsers.add_parser("quicknote", aliases=["qn", "scratch"], help="Append or view QuickNotes (quicknote.md)")
+    p_qn = subparsers.add_parser("quicknote", aliases=["qn"], help="Append or view QuickNotes (quicknote.md)")
     p_qn.add_argument("text", nargs="*", help="Text to append to QuickNote")
     p_qn.add_argument("-t", "--timestamp", action="store_true", help="Prefix with current timestamp")
     p_qn.add_argument("-e", "--edit", action="store_true", help="Open QuickNote in $EDITOR")
 
     # list / ls
-    p_list = subparsers.add_parser("list", aliases=["ls", "todo"], help="List todos with status, priority, tags")
+    p_list = subparsers.add_parser("list", aliases=["ls"], help="List todos with status, priority, tags")
     p_list.add_argument("-p", "--pending", action="store_true", help="Show only pending tasks")
     p_list.add_argument("-d", "--done", action="store_true", help="Show only completed tasks")
     p_list.add_argument("-t", "--tag", help="Filter by tag (e.g., #urgent)")
@@ -488,19 +488,19 @@ def build_parser():
     p_add.add_argument("-s", "--section", default="Inbox", help="Target section (default: Inbox)")
 
     # done / do
-    p_done = subparsers.add_parser("done", aliases=["do", "check"], help="Mark task(s) as completed")
+    p_done = subparsers.add_parser("done", aliases=["do"], help="Mark task(s) as completed")
     p_done.add_argument("ids", nargs="+", type=int, help="Task ID(s) to complete")
 
     # undone / undo
-    p_undone = subparsers.add_parser("undone", aliases=["undo", "uncheck"], help="Mark task(s) as uncompleted/pending")
+    p_undone = subparsers.add_parser("undone", aliases=["undo"], help="Mark task(s) as uncompleted/pending")
     p_undone.add_argument("ids", nargs="+", type=int, help="Task ID(s) to mark undone")
 
     # toggle / x
     p_toggle = subparsers.add_parser("toggle", aliases=["x"], help="Toggle task(s) completion status")
     p_toggle.add_argument("ids", nargs="+", type=int, help="Task ID(s) to toggle")
 
-    # rm / del
-    p_rm = subparsers.add_parser("rm", aliases=["del", "remove"], help="Delete task(s)")
+    # rm
+    p_rm = subparsers.add_parser("rm", help="Delete task(s)")
     p_rm.add_argument("ids", nargs="+", type=int, help="Task ID(s) to delete")
 
     # edit / e
@@ -515,7 +515,7 @@ def build_parser():
     subparsers.add_parser("notes", aliases=["nl"], help="List markdown notes in notebook")
 
     # find / search
-    p_find = subparsers.add_parser("find", aliases=["search", "grep"], help="Search across all notes & todos")
+    p_find = subparsers.add_parser("find", aliases=["search"], help="Search across all notes & todos")
     p_find.add_argument("query", nargs="+", help="Search query")
 
     # rename / mv
@@ -523,21 +523,21 @@ def build_parser():
     p_rename.add_argument("target", help="Task ID (e.g. 1) or file/folder path")
     p_rename.add_argument("new_name", help="New name for the task, note, or folder")
 
-    # ui / tui / dui / app
-    subparsers.add_parser("ui", aliases=["tui", "dui", "app"], help="Launch Markora interactive 4-tab Curses TUI")
+    # ui
+    subparsers.add_parser("ui", help="Launch Markora interactive 4-tab Curses TUI")
 
     # gui (App launcher background launch)
     subparsers.add_parser("gui", help="Launch in desktop terminal window")
 
-    # keep / gk / gkeep
-    p_keep = subparsers.add_parser("keep", aliases=["gk", "gkeep"], help="Google Keep sync & integration")
+    # keep
+    p_keep = subparsers.add_parser("keep", help="Google Keep sync & integration")
     p_keep.add_argument("action", nargs="?", choices=["auth", "status", "pull", "push", "sync", "logout"], default="status", help="Keep action (auth|status|pull|push|sync|logout)")
     p_keep.add_argument("--email", help="Google account email")
     p_keep.add_argument("--token", help="OAuth token or Master Token")
     p_keep.add_argument("--manual", action="store_true", help="Manual token input (disable automated browser popup)")
 
-    # fav / favorite / pin
-    p_fav = subparsers.add_parser("fav", aliases=["favorite", "pin", "star"], help="Manage favorite and pinned notes")
+    # fav
+    p_fav = subparsers.add_parser("fav", help="Manage favorite and pinned notes")
     p_fav.add_argument("action", nargs="?", choices=["list", "ls", "add", "rm", "remove", "toggle"], default="list", help="Favorite action (list|add|rm|toggle)")
     p_fav.add_argument("file", nargs="?", help="Relative or absolute note path")
 
@@ -549,23 +549,29 @@ def main(argv=None):
     args = parser.parse_args(argv)
     doc = TodoDocument()
 
-    if args.command in ["quicknote", "qn", "scratch"]:
-        cmd_quicknote(args)
-    elif args.command in ["list", "ls", "todo", None]:
-        if args.command is None:
+    if args.command is None:
+        # Default behavior: Launch interactive TUI when running in interactive terminal
+        # Fallback to todo listing when piped or running in headless/non-tty script
+        if sys.stdin.isatty() and sys.stdout.isatty():
+            start_tui(doc)
+        else:
             dummy_args = argparse.Namespace(pending=False, done=False, tag=None, section=None, compact=False)
             cmd_list(dummy_args, doc)
-        else:
-            cmd_list(args, doc)
+    elif args.command == "ui":
+        start_tui(doc)
+    elif args.command in ["quicknote", "qn"]:
+        cmd_quicknote(args)
+    elif args.command in ["list", "ls"]:
+        cmd_list(args, doc)
     elif args.command in ["add", "a"]:
         cmd_add(args, doc)
-    elif args.command in ["done", "do", "check"]:
+    elif args.command in ["done", "do"]:
         cmd_done(args, doc)
-    elif args.command in ["undone", "undo", "uncheck"]:
+    elif args.command in ["undone", "undo"]:
         cmd_undone(args, doc)
     elif args.command in ["toggle", "x"]:
         cmd_toggle(args, doc)
-    elif args.command in ["rm", "del", "remove"]:
+    elif args.command == "rm":
         cmd_rm(args, doc)
     elif args.command in ["edit", "e"]:
         cmd_edit(args, doc)
@@ -573,16 +579,14 @@ def main(argv=None):
         cmd_note(args)
     elif args.command in ["notes", "nl"]:
         cmd_notes_list(args)
-    elif args.command in ["find", "search", "grep"]:
+    elif args.command in ["find", "search"]:
         cmd_find(args)
     elif args.command in ["rename", "mv"]:
         cmd_rename(args, doc)
-    elif args.command in ["fav", "favorite", "pin", "star"]:
+    elif args.command == "fav":
         cmd_fav(args)
-    elif args.command in ["keep", "gk", "gkeep"]:
+    elif args.command == "keep":
         cmd_keep(args)
-    elif args.command in ["ui", "tui", "dui", "app"]:
-        start_tui(doc)
     elif args.command == "gui":
         launch_gui_window()
 

@@ -10,8 +10,6 @@ setup(
         "console_scripts": [
             "markora = markora.cli:main",
             "td = markora.cli:main",
-            "todo = markora.cli:main",
-            "mo = markora.cli:main",
         ],
     },
 )

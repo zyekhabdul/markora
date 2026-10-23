@@ -16,12 +16,13 @@ from .config import (
     QUICKNOTE_FILE,
     NOTES_DIR,
     DOCS_DIR,
+    TODO_FILE,
     Colors
 )
 
 
 class KeepSyncManager:
-    def __init__(self, config_dir=KEEP_CONFIG_DIR, docs_dir=DOCS_DIR):
+    def __init__(self, config_dir=KEEP_CONFIG_DIR, docs_dir=DOCS_DIR, todo_file=None):
         self.config_dir = config_dir
         self.config_file = os.path.join(config_dir, "keep_config.json")
         self.state_file = os.path.join(config_dir, "keep_state.json")
@@ -29,6 +30,7 @@ class KeepSyncManager:
         self.daily_dir = os.path.join(docs_dir, "daily-notes")
         self.quicknote_file = os.path.join(docs_dir, "quicknote.md")
         self.notes_dir = os.path.join(docs_dir, "notes")
+        self.todo_file = todo_file or TODO_FILE
         os.makedirs(self.config_dir, exist_ok=True)
         self.config = self.load_config()
         self.keep = None
@@ -69,11 +71,14 @@ class KeepSyncManager:
             try:
                 with open(self.state_file, "r", encoding="utf-8") as f:
                     state = json.load(f)
-                keep.load(email, master_token, state)
+                keep.authenticate(email, master_token, state=state, sync=False)
             except Exception:
                 keep.authenticate(email, master_token)
         else:
             keep.authenticate(email, master_token)
+
+        self.keep = keep
+        return keep
 
         self.keep = keep
         return keep
@@ -223,7 +228,87 @@ class KeepSyncManager:
             return "tasks"
         return "notes"
 
-    def pull(self):
+    def _get_or_create_tasks_note(self, keep):
+        lbl_tasks = self.get_or_create_label(keep, "tasks")
+        for n in keep.find(labels=[lbl_tasks]):
+            if not (n.trashed or n.deleted):
+                return n
+        for n in keep.all():
+            if not (n.trashed or n.deleted) and (n.title or "").strip().lower() in ["tasks", "todolist", "todo"]:
+                n.labels.add(lbl_tasks)
+                return n
+        n = keep.createNote("Tasks", "")
+        n.labels.add(lbl_tasks)
+        return n
+
+    def _merge_keep_tasks_to_local(self, keep_text, doc=None):
+        from .document import TodoDocument
+        local_doc = doc or TodoDocument(self.todo_file)
+        if not keep_text or not keep_text.strip():
+            return 0
+
+        pulled = 0
+        lines = keep_text.splitlines()
+        cur_section = "General"
+        existing_titles = {
+            re.sub(r"\s*\[(P[0-9]+|\([A-E]\))\]", "", t.text).strip().lower(): t
+            for t in local_doc.tasks
+        }
+
+        for line in lines:
+            if line.startswith("#"):
+                cur_section = line.strip("#").strip()
+                continue
+            m = re.match(r"^\s*[-*+]\s*(\[[ xX]\])?\s*(.+)$", line)
+            if m:
+                indent = len(line) - len(line.lstrip())
+                is_done = bool(m.group(1) and "x" in m.group(1).lower())
+                raw_title = m.group(2).strip()
+                if indent == 0:
+                    clean_check = re.sub(r"\s*\[(P[0-9]+|\([A-E]\))\]", "", raw_title).strip().lower()
+                    if clean_check not in existing_titles:
+                        local_doc.add_task(raw_title, section=cur_section)
+                        pulled += 1
+                        if is_done and local_doc.tasks:
+                            local_doc.tasks[-1].done = True
+                    else:
+                        existing_task = existing_titles[clean_check]
+                        if existing_task.done != is_done:
+                            local_doc.toggle_task(existing_task.id, set_done=is_done)
+                            pulled += 1
+
+        local_doc.save()
+        return pulled
+
+    def sync_tasks(self, keep, doc=None):
+        from .document import TodoDocument
+        pulled = 0
+        pushed = 0
+
+        task_note = self._get_or_create_tasks_note(keep)
+        k_mtime = task_note.timestamps.updated.timestamp() if task_note.timestamps.updated else 0
+
+        local_doc = doc or TodoDocument(self.todo_file)
+        local_mtime = os.path.getmtime(self.todo_file) if os.path.exists(self.todo_file) else 0
+
+        # If local exists and is newer than Keep (or Keep is empty): push local to Keep
+        if os.path.exists(self.todo_file) and (local_mtime > k_mtime + 2 or not task_note.text.strip()):
+            with open(self.todo_file, "r", encoding="utf-8") as f:
+                content = f.read()
+            task_note.text = content
+            task_note.touch()
+            pushed = len(local_doc.tasks)
+        else:
+            # Keep is newer or local missing: pull Keep tasks & smart-merge
+            pulled = self._merge_keep_tasks_to_local(task_note.text, local_doc)
+            if os.path.exists(self.todo_file):
+                with open(self.todo_file, "r", encoding="utf-8") as f:
+                    task_note.text = f.read()
+                task_note.touch()
+
+        return pulled, pushed
+
+    def pull(self, doc=None):
         keep = self.get_keep_client()
         keep.sync()
         pulled_count = 0
@@ -268,6 +353,7 @@ class KeepSyncManager:
                 if note.timestamps.updated:
                     mtime = note.timestamps.updated.timestamp()
                     os.utime(fpath, (mtime, mtime))
+                self._merge_keep_tasks_to_local(note.text, doc)
                 pulled_count += 1
 
             # 4. Notebook Notes
@@ -288,7 +374,7 @@ class KeepSyncManager:
         self.save_state()
         return pulled_count
 
-    def push(self):
+    def push(self, doc=None):
         keep = self.get_keep_client()
         keep.sync()
         pushed_count = 0
@@ -360,17 +446,31 @@ class KeepSyncManager:
                     note.touch()
                 pushed_count += 1
 
+        # 4. Push Tasks (TODOLIST.md)
+        todo_path = doc.filepath if (doc and hasattr(doc, "filepath")) else self.todo_file
+        if os.path.exists(todo_path):
+            task_note = self._get_or_create_tasks_note(keep)
+            with open(todo_path, "r", encoding="utf-8") as f:
+                task_note.text = f.read()
+            task_note.touch()
+            pushed_count += 1
+
         keep.sync()
         self.config["last_sync"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
         self.save_config()
         self.save_state()
         return pushed_count
 
-    def sync(self):
+    def sync(self, doc=None):
         keep = self.get_keep_client()
         keep.sync()
         pulled = 0
         pushed = 0
+
+        # 0. Sync Tasks (TODOLIST.md)
+        tasks_pulled, tasks_pushed = self.sync_tasks(keep, doc)
+        pulled += tasks_pulled
+        pushed += tasks_pushed
 
         lbl_daily = self.get_or_create_label(keep, "daily-notes")
         lbl_qn = self.get_or_create_label(keep, "quicknote")

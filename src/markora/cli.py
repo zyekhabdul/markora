@@ -16,6 +16,7 @@ from .config import (
     NOTES_DIR,
     DAILY_DIR,
     QUICKNOTE_FILE,
+    get_quicknote_file,
     Colors,
     make_clickable,
     get_editor,
@@ -24,8 +25,8 @@ from .config import (
 from .document import TodoDocument
 from .quicknote import load_quicknote, append_quicknote
 from .favorites import FavoritesManager
-from .keep import KeepSyncManager
-from .tui import start_tui, launch_gui_window
+# KeepSyncManager and tui are lazily loaded to maximize CLI execution speed
+
 
 BANNER = rf"""{Colors.BOLD}{Colors.CYAN}
   __  __            _                     
@@ -40,14 +41,15 @@ BANNER = rf"""{Colors.BOLD}{Colors.CYAN}
 
 def cmd_quicknote(args):
     ensure_directories()
+    target_qn = get_quicknote_file()
     if args.text:
         entry = append_quicknote(" ".join(args.text))
         print(f"{Colors.GREEN}[ OK ] Appended to QuickNote:{Colors.RESET} {entry}")
     elif args.edit:
-        subprocess.run([get_editor(), QUICKNOTE_FILE])
+        subprocess.run([get_editor(), target_qn])
     else:
         lines = load_quicknote()
-        clickable_path = make_clickable(QUICKNOTE_FILE, QUICKNOTE_FILE)
+        clickable_path = make_clickable(target_qn, target_qn)
         print(f"\n{Colors.BOLD}{Colors.CYAN}══ QUICKNOTE / BRAIN DUMP ══{Colors.RESET} {Colors.DIM}({clickable_path}){Colors.RESET}\n")
         for line in lines:
             if line.startswith("#"):
@@ -88,9 +90,9 @@ def cmd_list(args, doc):
     for t in tasks:
         if t.section != current_section:
             current_section = t.section
-            print(f"{Colors.BOLD}{Colors.WHITE}▶ {current_section}{Colors.RESET}")
+            print(f"{Colors.BOLD}{Colors.WHITE}> {current_section}{Colors.RESET}")
 
-        status_box = f"{Colors.GREEN}[✔]{Colors.RESET}" if t.done else f"{Colors.YELLOW}[ ]{Colors.RESET}"
+        status_box = f"{Colors.GREEN}[x]{Colors.RESET}" if t.done else f"{Colors.YELLOW}[ ]{Colors.RESET}"
         id_badge = f"{Colors.BOLD}{Colors.CYAN}[{t.id:2d}]{Colors.RESET}"
         
         prio_badge = ""
@@ -106,8 +108,12 @@ def cmd_list(args, doc):
 
         if not getattr(args, "compact", False):
             for sub in t.sublines:
-                print(f"       {Colors.DIM}└─ {sub}{Colors.RESET}")
+                print(f"       {Colors.DIM}|- {sub}{Colors.RESET}")
     print()
+
+    if getattr(args, "is_default", False):
+        prog = os.path.basename(sys.argv[0]) if sys.argv and sys.argv[0] else "td"
+        print(f"{Colors.DIM}Quick: {prog} add \"task\" [p1] | {prog} done <id> | {prog} p <id> <p1> | {prog} sync | {prog} tui | {prog} help{Colors.RESET}\n")
 
 
 def cmd_add(args, doc):
@@ -127,6 +133,46 @@ def cmd_add(args, doc):
         print(f"{Colors.GREEN}[ OK ] {msg}{Colors.RESET}")
     else:
         print(f"{Colors.RED}[ ERROR ] {msg}{Colors.RESET}")
+
+
+def cmd_prio(args, doc):
+    ensure_directories()
+    raw_prio = (args.priority or "").strip()
+    p_norm = raw_prio.upper()
+    if p_norm in ["1", "P1", "(A)"]:
+        new_prio = "P1"
+    elif p_norm in ["2", "P2", "(B)"]:
+        new_prio = "P2"
+    elif p_norm in ["3", "P3", "(C)"]:
+        new_prio = "P3"
+    elif p_norm in ["0", "NONE", "CLEAR", "", "-"]:
+        new_prio = ""
+    else:
+        print(f"{Colors.RED}[ ERROR ] Invalid priority '{raw_prio}'. Use: p1, p2, p3, or none.{Colors.RESET}")
+        return
+
+    ok, msg = doc.set_priority(args.id, new_prio)
+    if ok:
+        p_display = f"[{new_prio}]" if new_prio else "[NONE]"
+        print(f"{Colors.GREEN}[ OK ] Task #{args.id} priority set to {p_display}: {msg}{Colors.RESET}")
+    else:
+        print(f"{Colors.RED}[ ERROR ] {msg}{Colors.RESET}")
+
+
+def cmd_sync(args, doc):
+    ensure_directories()
+    from .keep import KeepSyncManager
+    km = KeepSyncManager()
+    if not km.is_authenticated():
+        print(f"{Colors.YELLOW}[ NOTE ] Not authenticated with Google Keep.{Colors.RESET}")
+        print(f"Run {Colors.BOLD}markora keep auth{Colors.RESET} to connect.")
+        return
+    print(f"{Colors.DIM}Synchronizing TODOLIST and notes with Google Keep...{Colors.RESET}")
+    try:
+        pulled, pushed = km.sync(doc=doc)
+        print(f"{Colors.GREEN}[ SUCCESS ] Sync completed: {pulled} items pulled, {pushed} items pushed.{Colors.RESET}")
+    except Exception as e:
+        print(f"{Colors.RED}[ ERROR ] Sync failed: {e}{Colors.RESET}")
 
 
 def cmd_done(args, doc):
@@ -257,7 +303,7 @@ def cmd_find(args):
             if file_matches:
                 rel = os.path.relpath(fp, DOCS_DIR)
                 clickable_rel = make_clickable(rel, fp)
-                print(f"{Colors.BOLD}{Colors.WHITE}📄 {clickable_rel}{Colors.RESET}")
+                print(f"{Colors.BOLD}{Colors.WHITE}[FILE] {clickable_rel}{Colors.RESET}")
                 for ln, line in file_matches:
                     match_count += 1
                     highlighted = re.sub(f"({re.escape(query)})", f"{Colors.BOLD}{Colors.YELLOW}\\1{Colors.RESET}", line, flags=re.IGNORECASE)
@@ -340,7 +386,7 @@ def cmd_fav(args):
 
     if action in ["list", "ls"]:
         favs = fm.get_favorites()
-        print(f"\n{Colors.BOLD}{Colors.YELLOW}══ ⭐ FAVORITE & PINNED NOTES ({len(favs)}) ══{Colors.RESET}\n")
+        print(f"\n{Colors.BOLD}{Colors.YELLOW}== FAVORITE & PINNED NOTES ({len(favs)}) =={Colors.RESET}\n")
         if not favs:
             print(f"  {Colors.DIM}(No favorite notes yet. In TUI press 'f' on any note to star it){Colors.RESET}\n")
             return
@@ -348,7 +394,7 @@ def cmd_fav(args):
             mtime = datetime.datetime.fromtimestamp(os.path.getmtime(full)).strftime("%Y-%m-%d %H:%M")
             size = os.path.getsize(full)
             clickable = make_clickable(rel, full)
-            print(f"  {Colors.YELLOW}[★ {idx:2d}]{Colors.RESET} {Colors.BOLD}{clickable:40s}{Colors.RESET} {Colors.DIM}{mtime} ({size/1024:.1f} KB){Colors.RESET}")
+            print(f"  {Colors.YELLOW}[* {idx:2d}]{Colors.RESET} {Colors.BOLD}{clickable:40s}{Colors.RESET} {Colors.DIM}{mtime} ({size/1024:.1f} KB){Colors.RESET}")
         print()
 
     elif action == "add":
@@ -361,7 +407,7 @@ def cmd_fav(args):
             print(f"{Colors.RED}[ ERROR ] File does not exist: {full}{Colors.RESET}")
             return
         fm.add(full)
-        print(f"{Colors.GREEN}[ SUCCESS ] Added '{os.path.basename(full)}' to Favorites [⭐].{Colors.RESET}")
+        print(f"{Colors.GREEN}[ SUCCESS ] Added '{os.path.basename(full)}' to Favorites [*].{Colors.RESET}")
 
     elif action in ["rm", "remove"]:
         target = args.file
@@ -388,8 +434,9 @@ def cmd_fav(args):
         print(f"{Colors.GREEN}[ SUCCESS ] {msg}{Colors.RESET}")
 
 
-def cmd_keep(args):
+def cmd_keep(args, doc=None):
     ensure_directories()
+    from .keep import KeepSyncManager
     km = KeepSyncManager()
     action = getattr(args, "action", None) or "status"
 
@@ -401,7 +448,7 @@ def cmd_keep(args):
             print(f"\n{Colors.RED}[ ERROR ] {msg}{Colors.RESET}\n")
 
     elif action == "status":
-        print(f"\n{Colors.BOLD}{Colors.CYAN}══ GOOGLE KEEP SYNC STATUS ══{Colors.RESET}\n")
+        print(f"\n{Colors.BOLD}{Colors.CYAN}== GOOGLE KEEP SYNC STATUS =={Colors.RESET}\n")
         if km.is_authenticated():
             email = km.config.get("email")
             last_sync = km.config.get("last_sync", "Never")
@@ -418,10 +465,10 @@ def cmd_keep(args):
         if not km.is_authenticated():
             print(f"{Colors.RED}[ ERROR ] Not authenticated. Run 'markora keep auth' first.{Colors.RESET}")
             return
-        print(f"{Colors.DIM}Pulling notes from Google Keep...{Colors.RESET}")
+        print(f"{Colors.DIM}Pulling notes and tasks from Google Keep...{Colors.RESET}")
         try:
-            count = km.pull()
-            print(f"{Colors.GREEN}[ SUCCESS ] Pulled/updated {count} notes from Google Keep.{Colors.RESET}")
+            count = km.pull(doc=doc)
+            print(f"{Colors.GREEN}[ SUCCESS ] Pulled/updated {count} items from Google Keep.{Colors.RESET}")
         except Exception as e:
             print(f"{Colors.RED}[ ERROR ] Pull failed: {e}{Colors.RESET}")
 
@@ -429,10 +476,10 @@ def cmd_keep(args):
         if not km.is_authenticated():
             print(f"{Colors.RED}[ ERROR ] Not authenticated. Run 'markora keep auth' first.{Colors.RESET}")
             return
-        print(f"{Colors.DIM}Pushing notes to Google Keep...{Colors.RESET}")
+        print(f"{Colors.DIM}Pushing notes and tasks to Google Keep...{Colors.RESET}")
         try:
-            count = km.push()
-            print(f"{Colors.GREEN}[ SUCCESS ] Pushed/updated {count} notes to Google Keep.{Colors.RESET}")
+            count = km.push(doc=doc)
+            print(f"{Colors.GREEN}[ SUCCESS ] Pushed/updated {count} items to Google Keep.{Colors.RESET}")
         except Exception as e:
             print(f"{Colors.RED}[ ERROR ] Push failed: {e}{Colors.RESET}")
 
@@ -442,7 +489,7 @@ def cmd_keep(args):
             return
         print(f"{Colors.DIM}Synchronizing with Google Keep...{Colors.RESET}")
         try:
-            pulled, pushed = km.sync()
+            pulled, pushed = km.sync(doc=doc)
             print(f"{Colors.GREEN}[ SUCCESS ] Sync completed: {pulled} pulled, {pushed} pushed.{Colors.RESET}")
         except Exception as e:
             print(f"{Colors.RED}[ ERROR ] Sync failed: {e}{Colors.RESET}")
@@ -450,6 +497,42 @@ def cmd_keep(args):
     elif action == "logout":
         ok, msg = km.logout()
         print(f"{Colors.GREEN}[ SUCCESS ] {msg}{Colors.RESET}")
+
+
+def print_help(prog="td"):
+    help_text = f"""{Colors.BOLD}{Colors.CYAN}Markora v{__version__}{Colors.RESET} - Sovereign Markdown Notebook & Todo TUI
+
+{Colors.BOLD}USAGE:{Colors.RESET}
+  {prog} <command> [arguments]
+
+{Colors.BOLD}TODO COMMANDS:{Colors.RESET}
+  {prog} [list]                    List active todos ({Colors.YELLOW}pending{Colors.RESET}, {Colors.GREEN}done{Colors.RESET}, {Colors.CYAN}id{Colors.RESET})
+  {prog} list -p | -d | -s <sec>   Filter todos (pending, done, section)
+  {prog} add "<text>" [p1|p2|p3]   Add new task (auto-detects p1/p2/p3 in text)
+  {prog} done <id...>              Mark task(s) as completed
+  {prog} undone <id...>            Mark task(s) as pending
+  {prog} toggle <id...>            Toggle task(s) completion status
+  {prog} prio <id> [p1|p2|none]    Set or clear task priority (alias: {prog} p)
+  {prog} rm <id...>                Delete task(s) (alias: {prog} del)
+  {prog} edit                      Open TODOLIST.md in $EDITOR
+
+{Colors.BOLD}NOTES & NOTEBOOK:{Colors.RESET}
+  {prog} qn ["<text>"] [-e]        QuickNote / brain dump (append or edit)
+  {prog} note ["<title>"] [-d]     Create or open markdown note (-d for daily)
+  {prog} notes                     List markdown notes in notebook
+  {prog} find "<query>"            Search across all notes & todos
+  {prog} fav [list|add|rm]         Manage starred favorite notes
+
+{Colors.BOLD}INTERACTIVE & SYNC:{Colors.RESET}
+  {prog} tui                       Launch interactive 4-tab Curses TUI (alias: {prog} ui)
+  {prog} sync                      Bidirectional sync with Google Keep (alias: {prog} s)
+  {prog} keep [status|auth|sync]   Detailed Google Keep account & sync options
+
+{Colors.BOLD}COMMAND ALIASES:{Colors.RESET}
+  • {prog} a -> add, {prog} do -> done, {prog} p -> prio, {prog} del -> rm
+  • {prog} s -> sync, {prog} ui -> tui, {prog} ls -> list
+"""
+    print(help_text)
 
 
 def build_parser():
@@ -461,11 +544,18 @@ def build_parser():
                "  markora / td                  Launch interactive 4-tab Curses TUI (default)\n"
                "  td ls -p                      List pending tasks (alias: markora list)\n"
                "  td a 'Finish report' -p p1    Add new task (alias: markora add)\n"
+               "  td p 1 p2                     Set priority (alias: markora prio)\n"
                "  td do 1 2                     Mark completed (alias: markora done)\n"
-               "  td qn 'Quick thought'         Append to QuickNote (alias: markora quicknote)\n"
+               "  td s                          Bidirectional Keep sync (alias: markora sync)\n"
+               "  td qn 'Quick thought'         Append to QuickNote (alias: markora quicknote)\n",
+        add_help=False
     )
     parser.add_argument("-v", "--version", action="version", version=f"%(prog)s v{__version__}")
+    parser.add_argument("-h", "--help", action="store_true", help="Show structured help")
     subparsers = parser.add_subparsers(dest="command", help="Subcommand to run")
+
+    # help
+    subparsers.add_parser("help", help="Show structured command overview and help")
 
     # quicknote / qn
     p_qn = subparsers.add_parser("quicknote", aliases=["qn"], help="Append or view QuickNotes (quicknote.md)")
@@ -484,8 +574,13 @@ def build_parser():
     # add / a
     p_add = subparsers.add_parser("add", aliases=["a"], help="Add a new task")
     p_add.add_argument("title", nargs="+", help="Task title/description")
-    p_add.add_argument("-p", "--prio", choices=["p1", "p2", "p3", "P1", "P2", "P3"], help="Priority flag")
+    p_add.add_argument("-p", "--prio", choices=["p1", "p2", "p3", "P1", "P2", "P3", "1", "2", "3"], help="Priority flag")
     p_add.add_argument("-s", "--section", default="Inbox", help="Target section (default: Inbox)")
+
+    # prio / p
+    p_prio = subparsers.add_parser("prio", aliases=["p"], help="Set or clear task priority (p1, p2, p3, none)")
+    p_prio.add_argument("id", type=int, help="Task ID")
+    p_prio.add_argument("priority", nargs="?", default="", help="Priority (p1, p2, p3, none, clear)")
 
     # done / do
     p_done = subparsers.add_parser("done", aliases=["do"], help="Mark task(s) as completed")
@@ -505,6 +600,9 @@ def build_parser():
 
     # edit / e
     subparsers.add_parser("edit", aliases=["e"], help="Open todo.md in $EDITOR")
+
+    # sync / s
+    subparsers.add_parser("sync", aliases=["s"], help="Bidirectional sync with Google Keep")
 
     # note / n
     p_note = subparsers.add_parser("note", aliases=["n"], help="Create or edit a markdown note")
@@ -545,29 +643,50 @@ def build_parser():
 
 
 def main(argv=None):
+    if argv is None:
+        argv = sys.argv[1:]
+
+    prog_name = os.path.basename(sys.argv[0]) if sys.argv and sys.argv[0] else "td"
+
+    if argv and argv[0] in ["help", "-h", "--help"]:
+        print_help(prog_name)
+        return
+
     parser = build_parser()
-    args = parser.parse_args(argv)
+    try:
+        args = parser.parse_args(argv)
+    except SystemExit:
+        print(f"\n{Colors.DIM}Run '{prog_name} help' to see all available commands.{Colors.RESET}\n")
+        return
+
+    if getattr(args, "help", False) or args.command == "help":
+        print_help(prog_name)
+        return
+
     doc = TodoDocument()
 
     if args.command is None:
         # Default behavior: Launch interactive TUI when running in interactive terminal
         # Fallback to todo listing when piped or running in headless/non-tty script
         if sys.stdin.isatty() and sys.stdout.isatty():
+            from .tui import start_tui
             start_tui(doc)
         else:
-            dummy_args = argparse.Namespace(pending=False, done=False, tag=None, section=None, compact=False)
+            dummy_args = argparse.Namespace(pending=False, done=False, tag=None, section=None, compact=False, is_default=True)
             cmd_list(dummy_args, doc)
-    elif args.command == "ui":
-        start_tui(doc)
-    elif args.command in ["quicknote", "qn"]:
+    elif args.command in ["quicknote", "qn", "scratch"]:
         cmd_quicknote(args)
-    elif args.command in ["list", "ls"]:
+    elif args.command in ["list", "ls", "todo"]:
         cmd_list(args, doc)
     elif args.command in ["add", "a"]:
         cmd_add(args, doc)
-    elif args.command in ["done", "do"]:
+    elif args.command in ["prio", "p"]:
+        cmd_prio(args, doc)
+    elif args.command in ["sync", "s"]:
+        cmd_sync(args, doc)
+    elif args.command in ["done", "do", "check"]:
         cmd_done(args, doc)
-    elif args.command in ["undone", "undo"]:
+    elif args.command in ["undone", "undo", "uncheck"]:
         cmd_undone(args, doc)
     elif args.command in ["toggle", "x"]:
         cmd_toggle(args, doc)
@@ -583,11 +702,15 @@ def main(argv=None):
         cmd_find(args)
     elif args.command in ["rename", "mv"]:
         cmd_rename(args, doc)
-    elif args.command == "fav":
+    elif args.command in ["fav", "favorite", "pin", "star"]:
         cmd_fav(args)
-    elif args.command == "keep":
-        cmd_keep(args)
+    elif args.command in ["keep", "gk", "gkeep"]:
+        cmd_keep(args, doc)
+    elif args.command in ["ui", "tui", "dui", "app"]:
+        from .tui import start_tui
+        start_tui(doc)
     elif args.command == "gui":
+        from .tui import launch_gui_window
         launch_gui_window()
 
 

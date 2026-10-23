@@ -56,7 +56,7 @@ class FavoritesManager:
         else:
             self.favorites.add(rel)
             self.save()
-            return True, f"Added '{os.path.basename(rel)}' to Favorites [⭐]."
+            return True, f"Added '{os.path.basename(rel)}' to Favorites [*]."
 
     def get_favorites(self):
         valid = []
